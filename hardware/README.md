@@ -1,5 +1,7 @@
 # Rig inputs — prototype A
 
+**Supplied-part update:** see [the screenshot-based assessment](supplied-parts.md). The user's encoders are assembled five-wire modules, whereas this revision A drawing shows bare four-wire encoders. The assessment provides the module mapping and proposes six MX keys plus two HUANO mouse switches. Joystick voltage/pinout and the exact USB socket remain pending identification.
+
 Open **rig-inputs.kicad_sch** in KiCad, or print **rig-inputs.pdf** on A3. `render/rig-inputs.svg` is zoomable. `wire-list.csv` lists every connection. Matching labels in the schematic are connected electrically; the empty module rectangles represent purchased assemblies, not bare chips. This is a wiring schematic, **not a PCB layout or a physical header pinout**.
 
 ## Minimum build

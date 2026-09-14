@@ -1,0 +1,32 @@
+Net,From,To,Assembly note
+RESTORE,U1 GPIO6,SW1 contact 1,Restore height
+GND,U1 GND / ground bus,SW1 contact 2,Black; daisy-chain within key bank
+DASHBOARD,U1 GPIO7,SW2 contact 1,Dashboard
+GND,U1 GND / ground bus,SW2 contact 2,Black; daisy-chain within key bank
+DESKTOP,U1 GPIO8,SW3 contact 1,Desktop request
+GND,U1 GND / ground bus,SW3 contact 2,Black; daisy-chain within key bank
+UNDO,U1 GPIO9,SW4 contact 1,Undo
+GND,U1 GND / ground bus,SW4 contact 2,Black; daisy-chain within key bank
+MOUSE_L,U1 GPIO10,SW5 contact 1,Left mouse
+GND,U1 GND / ground bus,SW5 contact 2,Black; daisy-chain within key bank
+MOUSE_R,U1 GPIO11,SW6 contact 1,Right mouse
+GND,U1 GND / ground bus,SW6 contact 2,Black; daisy-chain within key bank
+KEY_WIN,U1 GPIO12,SW7 contact 1,Windows key
+GND,U1 GND / ground bus,SW7 contact 2,Black; daisy-chain within key bank
+KEY_ESC,U1 GPIO13,SW8 contact 1,Escape
+GND,U1 GND / ground bus,SW8 contact 2,Black; daisy-chain within key bank
+JOY_X,U1 GPIO4,JY1 X,Label both wire ends
+JOY_Y,U1 GPIO5,JY1 Y,Label both wire ends
+JOY_PUSH,U1 GPIO21,JY1 SW (optional),Label both wire ends
+HEIGHT_A,U1 GPIO15,ENC1 A,Label both wire ends
+HEIGHT_B,U1 GPIO16,ENC1 B,Label both wire ends
+HEIGHT_PUSH,U1 GPIO17,ENC1 SW1,Label both wire ends
+SCROLL_A,U1 GPIO18,ENC2 A,Label both wire ends
+SCROLL_B,U1 GPIO1,ENC2 B,Label both wire ends
+SCROLL_PUSH,U1 GPIO2,ENC2 SW1,Label both wire ends
+GND,U1 GND / ground bus,JY1 GND,Black
+GND,U1 GND / ground bus,ENC1 C,Black
+GND,U1 GND / ground bus,ENC1 SW2,Black
+GND,U1 GND / ground bus,ENC2 C,Black
+GND,U1 GND / ground bus,ENC2 SW2,Black
+V3V3,U1 3V3,JY1 VCC,Red; ONLY after joystick identification

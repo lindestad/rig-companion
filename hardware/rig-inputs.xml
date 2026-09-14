@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>C:\Users\danie\dev\rig-companion\hardware\rig-inputs.kicad_sch</source>
+    <date>2026-09-14T20:02:45</date>
+    <tool>Eeschema 10.0.6</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Rig inputs - hand-wired prototype</title>
+        <company/>
+        <rev>A</rev>
+        <date>2026-09-14</date>
+        <source>rig-inputs.kicad_sch</source>
+        <comment number="1" value="Logical wiring; joystick flex mapping pending"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="ENC1">
+      <value>Height encoder + push</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="HeightEncoder" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6378a0ab-f917-44d1-b67a-c658749e2b46</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="A"/>
+            <pin num="B"/>
+            <pin num="C"/>
+            <pin num="SW1"/>
+            <pin num="SW2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="ENC2">
+      <value>Scroll encoder + push</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="ScrollEncoder" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>96f57447-ce38-4e0d-94fe-b46e8309c864</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="A"/>
+            <pin num="B"/>
+            <pin num="C"/>
+            <pin num="SW1"/>
+            <pin num="SW2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="JY1">
+      <value>Analog stick / breakout REQUIRED</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Joystick" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>26d03762-3aa7-4c9c-a7f3-ea93a3f4aa98</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="VCC"/>
+            <pin num="GND"/>
+            <pin num="X"/>
+            <pin num="Y"/>
+            <pin num="SW_optional"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW1">
+      <value>Restore height</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5cde1226-bd62-483d-a1a8-6bc5cda5c5eb</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW2">
+      <value>Dashboard</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b61b950b-943a-42d7-ab0b-ebe1fe14d349</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW3">
+      <value>Desktop request</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>72f795cd-675b-4f80-8257-ade41e54e580</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW4">
+      <value>Undo</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6d1468eb-dc45-49f9-a5e9-3a1e92e26f68</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW5">
+      <value>Left mouse</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>853c1d6b-93c0-4573-bd85-9bc5849557d0</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW6">
+      <value>Right mouse</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>916415ae-4c0e-4034-8cdb-bebc364c1ad7</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW7">
+      <value>Windows key</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ee12688f-3166-4f6c-ad29-57bab1eacf93</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="SW8">
+      <value>Escape</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Key" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d0842186-d03d-42e8-821e-c30a9067725d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U1">
+      <value>ESP32-S3 DevKitC-1 / logical pins</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Rig" part="Devkit" description=""/>
+      <property name="Sheetname" value="Root"/>
+      <property name="Sheetfile" value="hardware/rig-inputs.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7b8b766c-ec57-445a-af29-047252719907</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="3V3"/>
+            <pin num="GND"/>
+            <pin num="GPIO4"/>
+            <pin num="GPIO5"/>
+            <pin num="GPIO6"/>
+            <pin num="GPIO7"/>
+            <pin num="GPIO8"/>
+            <pin num="GPIO9"/>
+            <pin num="GPIO10"/>
+            <pin num="GPIO11"/>
+            <pin num="GPIO12"/>
+            <pin num="GPIO13"/>
+            <pin num="GPIO15"/>
+            <pin num="GPIO16"/>
+            <pin num="GPIO17"/>
+            <pin num="GPIO18"/>
+            <pin num="GPIO1"/>
+            <pin num="GPIO2"/>
+            <pin num="GPIO21"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Rig" part="Devkit">
+      <fields>
+        <field name="Reference">U1</field>
+        <field name="Value">ESP32-S3 DevKitC-1 / logical pins</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="3V3" name="3V3" type="passive"/>
+        <pin num="GND" name="GND" type="passive"/>
+        <pin num="GPIO1" name="GPIO1" type="passive"/>
+        <pin num="GPIO2" name="GPIO2" type="passive"/>
+        <pin num="GPIO4" name="GPIO4" type="passive"/>
+        <pin num="GPIO5" name="GPIO5" type="passive"/>
+        <pin num="GPIO6" name="GPIO6" type="passive"/>
+        <pin num="GPIO7" name="GPIO7" type="passive"/>
+        <pin num="GPIO8" name="GPIO8" type="passive"/>
+        <pin num="GPIO9" name="GPIO9" type="passive"/>
+        <pin num="GPIO10" name="GPIO10" type="passive"/>
+        <pin num="GPIO11" name="GPIO11" type="passive"/>
+        <pin num="GPIO12" name="GPIO12" type="passive"/>
+        <pin num="GPIO13" name="GPIO13" type="passive"/>
+        <pin num="GPIO15" name="GPIO15" type="passive"/>
+        <pin num="GPIO16" name="GPIO16" type="passive"/>
+        <pin num="GPIO17" name="GPIO17" type="passive"/>
+        <pin num="GPIO18" name="GPIO18" type="passive"/>
+        <pin num="GPIO21" name="GPIO21" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Rig" part="HeightEncoder">
+      <fields>
+        <field name="Reference">ENC1</field>
+        <field name="Value">Height encoder + push</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="A" name="A" type="passive"/>
+        <pin num="B" name="B" type="passive"/>
+        <pin num="C" name="C" type="passive"/>
+        <pin num="SW1" name="SW1" type="passive"/>
+        <pin num="SW2" name="SW2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Rig" part="Joystick">
+      <fields>
+        <field name="Reference">JY1</field>
+        <field name="Value">Analog stick / breakout REQUIRED</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="GND" name="GND" type="passive"/>
+        <pin num="SW_optional" name="SW_optional" type="passive"/>
+        <pin num="VCC" name="VCC" type="passive"/>
+        <pin num="X" name="X" type="passive"/>
+        <pin num="Y" name="Y" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Rig" part="Key">
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">MX</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Rig" part="ScrollEncoder">
+      <fields>
+        <field name="Reference">ENC2</field>
+        <field name="Value">Scroll encoder + push</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="A" name="A" type="passive"/>
+        <pin num="B" name="B" type="passive"/>
+        <pin num="C" name="C" type="passive"/>
+        <pin num="SW1" name="SW1" type="passive"/>
+        <pin num="SW2" name="SW2" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="/DASHBOARD" class="Default">
+      <node ref="SW2" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO7" pinfunction="GPIO7_GPIO7" pintype="passive"/>
+    </net>
+    <net code="2" name="/DESKTOP" class="Default">
+      <node ref="SW3" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO8" pinfunction="GPIO8_GPIO8" pintype="passive"/>
+    </net>
+    <net code="3" name="/GND" class="Default">
+      <node ref="ENC1" pin="C" pinfunction="C_C" pintype="passive"/>
+      <node ref="ENC1" pin="SW2" pinfunction="SW2_SW2" pintype="passive"/>
+      <node ref="ENC2" pin="C" pinfunction="C_C" pintype="passive"/>
+      <node ref="ENC2" pin="SW2" pinfunction="SW2_SW2" pintype="passive"/>
+      <node ref="JY1" pin="GND" pinfunction="GND_GND" pintype="passive"/>
+      <node ref="SW1" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW2" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW3" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW4" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW5" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW6" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW7" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="SW8" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="U1" pin="GND" pinfunction="GND_GND" pintype="passive"/>
+    </net>
+    <net code="4" name="/HEIGHT_A" class="Default">
+      <node ref="ENC1" pin="A" pinfunction="A_A" pintype="passive"/>
+      <node ref="U1" pin="GPIO15" pinfunction="GPIO15_GPIO15" pintype="passive"/>
+    </net>
+    <net code="5" name="/HEIGHT_B" class="Default">
+      <node ref="ENC1" pin="B" pinfunction="B_B" pintype="passive"/>
+      <node ref="U1" pin="GPIO16" pinfunction="GPIO16_GPIO16" pintype="passive"/>
+    </net>
+    <net code="6" name="/HEIGHT_PUSH" class="Default">
+      <node ref="ENC1" pin="SW1" pinfunction="SW1_SW1" pintype="passive"/>
+      <node ref="U1" pin="GPIO17" pinfunction="GPIO17_GPIO17" pintype="passive"/>
+    </net>
+    <net code="7" name="/JOY_PUSH" class="Default">
+      <node ref="JY1" pin="SW_optional" pinfunction="SW_optional_SW_optional" pintype="passive"/>
+      <node ref="U1" pin="GPIO21" pinfunction="GPIO21_GPIO21" pintype="passive"/>
+    </net>
+    <net code="8" name="/JOY_X" class="Default">
+      <node ref="JY1" pin="X" pinfunction="X_X" pintype="passive"/>
+      <node ref="U1" pin="GPIO4" pinfunction="GPIO4_GPIO4" pintype="passive"/>
+    </net>
+    <net code="9" name="/JOY_Y" class="Default">
+      <node ref="JY1" pin="Y" pinfunction="Y_Y" pintype="passive"/>
+      <node ref="U1" pin="GPIO5" pinfunction="GPIO5_GPIO5" pintype="passive"/>
+    </net>
+    <net code="10" name="/KEY_ESC" class="Default">
+      <node ref="SW8" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO13" pinfunction="GPIO13_GPIO13" pintype="passive"/>
+    </net>
+    <net code="11" name="/KEY_WIN" class="Default">
+      <node ref="SW7" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO12" pinfunction="GPIO12_GPIO12" pintype="passive"/>
+    </net>
+    <net code="12" name="/MOUSE_L" class="Default">
+      <node ref="SW5" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO10" pinfunction="GPIO10_GPIO10" pintype="passive"/>
+    </net>
+    <net code="13" name="/MOUSE_R" class="Default">
+      <node ref="SW6" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO11" pinfunction="GPIO11_GPIO11" pintype="passive"/>
+    </net>
+    <net code="14" name="/RESTORE" class="Default">
+      <node ref="SW1" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO6" pinfunction="GPIO6_GPIO6" pintype="passive"/>
+    </net>
+    <net code="15" name="/SCROLL_A" class="Default">
+      <node ref="ENC2" pin="A" pinfunction="A_A" pintype="passive"/>
+      <node ref="U1" pin="GPIO18" pinfunction="GPIO18_GPIO18" pintype="passive"/>
+    </net>
+    <net code="16" name="/SCROLL_B" class="Default">
+      <node ref="ENC2" pin="B" pinfunction="B_B" pintype="passive"/>
+      <node ref="U1" pin="GPIO1" pinfunction="GPIO1_GPIO1" pintype="passive"/>
+    </net>
+    <net code="17" name="/SCROLL_PUSH" class="Default">
+      <node ref="ENC2" pin="SW1" pinfunction="SW1_SW1" pintype="passive"/>
+      <node ref="U1" pin="GPIO2" pinfunction="GPIO2_GPIO2" pintype="passive"/>
+    </net>
+    <net code="18" name="/UNDO" class="Default">
+      <node ref="SW4" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="GPIO9" pinfunction="GPIO9_GPIO9" pintype="passive"/>
+    </net>
+    <net code="19" name="/V3V3" class="Default">
+      <node ref="JY1" pin="VCC" pinfunction="VCC_VCC" pintype="passive"/>
+      <node ref="U1" pin="3V3" pinfunction="3V3_3V3" pintype="passive"/>
+    </net>
+  </nets>
+</export>

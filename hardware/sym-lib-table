@@ -1,0 +1,1 @@
+(sym_lib_table (lib (name "Rig") (type "KiCad") (uri "${KIPRJMOD}/Rig.kicad_sym") (options "") (descr "Logical hand-wiring terminals")))

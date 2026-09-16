@@ -20,6 +20,7 @@ Keep the window open or minimized. Closing it quits the app and releases the hot
 
 - **F13:** restore 98 cm plus saved horizontal position and heading. Without a captured reference, use the SteamVR origin and forward direction. Waits **0.5 seconds**, then checks tracking stability and applies the correction; sit normally and look forward. The GUI height/capture countdown remains three seconds. Disabling countdown removes the delay for both.
 - **F14:** click the SteamVR dashboard gaze pointer through the modified sboys3 HMD driver. The dashboard must be visible. The driver supplies and releases a 120 ms native headset system-button pulse. No virtual Xbox controller is created.
+- **F15:** open the dashboard directly to the first available desktop panel. If desktop panels are still loading, opens the dashboard normally; press again once loaded. The GUI **Desktop · F15** button uses the same action. This opens rather than toggles the dashboard closed.
 - **Ctrl+Alt+F8:** saved height only; **Ctrl+Alt+F9:** undo/cancel countdown; **Ctrl+Alt+F7:** open dashboard.
 
 F13 always uses 98 cm, without overwriting the saved profile. Disable Global shortcuts to release the bindings. The F14 bridge is intended for the dashboard, not for clicking scene objects in SteamVR Home or games. Holding F14 does not repeat or drag. `rigctl headset-bridge-status` checks the active driver's capability without clicking. See [driver installation and rollback](docs/driver-installation.md).

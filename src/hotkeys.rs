@@ -4,7 +4,7 @@ use windows_sys::Win32::{
     UI::{
         Input::KeyboardAndMouse::{
             MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, RegisterHotKey, UnregisterHotKey, VK_F7, VK_F8,
-            VK_F9, VK_F13, VK_F14,
+            VK_F9, VK_F13, VK_F14, VK_F15,
         },
         WindowsAndMessaging::{GetMessageW, MSG, PostThreadMessageW, WM_HOTKEY, WM_QUIT},
     },
@@ -31,6 +31,7 @@ impl Hotkeys {
                         (VK_F7, MOD_CONTROL | MOD_ALT),
                         (VK_F13, 0),
                         (VK_F14, 0),
+                        (VK_F15, 0),
                     ];
                     for (index, (key, modifiers)) in keys.iter().enumerate() {
                         if RegisterHotKey(
@@ -57,7 +58,7 @@ impl Hotkeys {
                             let _ = events_tx.send(msg.wParam as u32);
                         }
                     }
-                    for id in 1..=5 {
+                    for id in 1..=6 {
                         UnregisterHotKey(std::ptr::null_mut(), id);
                     }
                 }

@@ -357,10 +357,9 @@ impl Engine {
             }
             Command::Dashboard => {
                 match self.backend.as_ref().context("Connect to SteamVR first")? {
-                    Backend::Live(vr) => vr.dashboard()?,
-                    Backend::Demo { .. } => return Ok("Demo: dashboard request simulated.".into()),
+                    Backend::Live(vr) => vr.dashboard(),
+                    Backend::Demo { .. } => Ok("Demo: dashboard request simulated.".into()),
                 }
-                Ok("SteamVR dashboard requested.".into())
             }
             Command::GazeClick => {
                 if self.state.demo {

@@ -114,6 +114,7 @@ impl App {
                         3 => self.dispatch(Command::Dashboard),
                         4 => self.schedule(Command::Recenter98),
                         5 => self.dispatch(Command::GazeClick),
+                        6 => self.dispatch(Command::Dashboard),
                         _ => {}
                     }
                 }
@@ -449,7 +450,7 @@ impl App {
             .padding([12, 16])
             .on_press_maybe(free.then_some(Message::Connect))
             .style(secondary),
-            button(text("Open dashboard").size(14))
+            button(text("Desktop · F15").size(14))
                 .padding([12, 16])
                 .on_press_maybe((self.state.connected && free).then_some(Message::Dashboard))
                 .style(secondary),
@@ -466,7 +467,7 @@ impl App {
                 .label("Global shortcuts")
                 .on_toggle(Message::Shortcuts)
                 .size(17),
-            text("F13 recenter 98 cm / F14 VR click | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
+            text("F13 recenter / F14 click / F15 desktop | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
                 .size(12)
                 .color(MUTED),
             Space::new().width(Fill),

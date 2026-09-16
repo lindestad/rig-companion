@@ -218,13 +218,34 @@ impl SteamVr {
         )
     }
 
-    pub fn dashboard(&self) -> Result<()> {
+    pub fn dashboard(&self) -> Result<String> {
         unsafe {
             let overlay = &*table::<vr::VR_IVROverlay_FnTable>(c"FnTable:IVROverlay_028")?;
-            let key = CString::new("")?;
-            overlay.ShowDashboard.context("Missing dashboard API")?(key.as_ptr().cast_mut());
+            let show = overlay.ShowDashboard.context("Missing dashboard API")?;
+            let find = overlay.FindOverlay.context("Missing overlay lookup API")?;
+            // Desktop overlays may not exist until the dashboard has initialized.
+            for attempt in 0..2 {
+                let keys = (1..=8)
+                    .map(|i| format!("system.desktop.{i}"))
+                    .chain(["system.desktop".into(), "valve.steam.desktop".into()]);
+                for name in keys {
+                    let key = CString::new(name.as_str())?;
+                    let mut handle = 0;
+                    if find(key.as_ptr().cast_mut(), &mut handle) == 0 && handle != 0 {
+                        show(key.as_ptr().cast_mut());
+                        return Ok(format!("Desktop dashboard requested ({name})."));
+                    }
+                }
+                if attempt == 0 {
+                    show(c"".as_ptr().cast_mut());
+                    thread::sleep(Duration::from_millis(200));
+                }
+            }
         }
-        Ok(())
+        Ok(
+            "Dashboard opened; no desktop panel was available yet. Press F15 again after it loads."
+                .into(),
+        )
     }
 
     pub fn dashboard_visible(&self) -> Result<bool> {

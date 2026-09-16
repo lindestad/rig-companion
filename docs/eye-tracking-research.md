@@ -2,9 +2,19 @@
 
 ## Implementation follow-up, September 16
 
+### Licensed connection test
+
+With the user's authorization, the probe now uses Tobii's normal `tobii_device_create_ex` entry point and the installed Pimax XR5 license, only after an unlicensed connection identifies generation `XR5` and a Dream Air model prefix `XR5_PIMAX_DA_`. The original connection is closed first. The installed license stays in its original location; its contents are never printed, copied into the repository or transmitted. Pimax's wrapper uses UTF-16LE data and an explicit byte count, which the helper reproduces.
+
+**Live result: license validation code 6, `invalid process name`.** The connection function itself returned success, demonstrating why its return code alone cannot establish license acceptance. The helper rejects any nonzero license-validation result, closes the returned handle and performs no restricted operations. Subsequent driver diagnostics still reported valid gaze with SteamVR running. No backup was retrieved and no calibration was started.
+
+The installed vendor license therefore does not authorize the current helper process. Native calibration remains blocked through this route. Remaining integration options are a vendor-supported calibration entry point in the existing Pimax application, or a license that permits our companion. The probe does not rename executables, change signatures, patch validation or modify license contents. The running app's availability check uses the updated helper immediately; `eye-probe --unlicensed` retains the original diagnostic comparison path.
+
+Validation: 18 existing tests, Clippy and release helper build. The calibration start/apply/rollback path remains unimplemented and untested.
+
 The companion now has an **Eye tracking** page: two angular plots, degrees, driver validity and diagnostic file age. Reads run off the UI/SteamVR worker at 250 ms intervals only on this page while focused; **Keep live in VR** allows unfocused viewing. Invalid, stale, offline and temporarily unreadable samples hide the markers. The recorded PID must match a running vrserver process. Both diagnostic locations are supported. No continuous gaze logging is added. Existing F13/F14/F15 commands stay active.
 
-The **Check calibration availability** button runs a separate `eye-probe.exe` process with a 12-second timeout. It pins Pimax EyeTrackingGuide's installed Tobii ABI to 5.9.0.2, enumerates devices, queries model/generation and 3D calibration capability, and checks calibration retrieval on XR5. It only counts retrieval bytes, without saving a backup or claiming rollback is verified. It does not load vendor license files, subscribe to gaze streams, start calibration, change lens geometry or restart services.
+The **Check calibration availability** button runs a separate `eye-probe.exe` process with a 12-second timeout. It pins Pimax EyeTrackingGuide's installed Tobii ABI to 5.9.0.2, enumerates devices, queries model/generation and 3D calibration capability, and checks calibration retrieval on XR5. It only counts retrieval bytes, without saving a backup or claiming rollback is verified. Following the licensed connection test above it uses the installed XR5 license and reports validation rejection before attempting restricted calls. It does not subscribe to gaze streams, start calibration, change lens geometry or restart services.
 
 Live result during implementation: API version matched, enumeration succeeded but returned **zero devices**. The driver file was fresh, with `valid: false`, and there was no Tobii-named runtime process in the process snapshot. This does not establish the cause; headset power state, Pimax eye-tracking enablement and runtime availability need checking. It prevented testing device coexistence, calibration capability, backup and calibration writes. The in-app button makes this discovery repeatable once eye tracking is active. Native calibration is **not implemented** yet; no start-calibration control is advertised.
 

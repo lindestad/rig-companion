@@ -1,6 +1,7 @@
 //! Isolated, read-only probe of the installed Pimax calibration backend.
 //! ABI verified against EyeTrackingGuide 5.9.0.2 interop declarations.
 use anyhow::{Result, ensure};
+use clap::Parser;
 use libloading::Library;
 use serde_json::json;
 use std::ffi::{CStr, CString, c_char, c_void};
@@ -8,6 +9,36 @@ use std::ffi::{CStr, CString, c_char, c_void};
 type Handle = *mut c_void;
 type UrlCallback = unsafe extern "C" fn(*const c_char, Handle);
 type DataCallback = unsafe extern "C" fn(*const c_void, usize, Handle);
+
+#[derive(Parser)]
+struct Args {
+    /// Compare against a plain connection without the installed Pimax XR5 license.
+    #[arg(long)]
+    unlicensed: bool,
+}
+
+#[repr(C)]
+struct LicenseKey {
+    data: *const u16,
+    size: usize,
+}
+
+fn license_result(code: i32) -> &'static str {
+    match code {
+        0 => "accepted",
+        1 => "tampered",
+        2 => "invalid application signature",
+        3 => "unsigned application",
+        4 => "expired",
+        5 => "not yet valid",
+        6 => "invalid process name",
+        7 => "invalid device serial number",
+        8 => "invalid device model",
+        9 => "invalid platform type",
+        10 => "revoked",
+        _ => "unknown validation result",
+    }
+}
 
 unsafe extern "C" fn receive_url(url: *const c_char, context: Handle) {
     if !url.is_null() {
@@ -25,7 +56,7 @@ unsafe extern "C" fn receive_size(_: *const c_void, size: usize, context: Handle
 }
 
 fn main() {
-    match probe() {
+    match probe(Args::parse()) {
         Ok(value) => println!("{value}"),
         Err(e) => {
             println!("{}", json!({"ok":false,"error":format!("{e:#}")}));
@@ -34,7 +65,7 @@ fn main() {
     }
 }
 
-fn probe() -> Result<serde_json::Value> {
+fn probe(args: Args) -> Result<serde_json::Value> {
     let path = r"C:\Program Files\Pimax\EyeTrackingGuide\EyeTrackingGuide_Data\Plugins\x86_64\tobii_stream_engine.dll";
     // SAFETY: absolute installed vendor DLL, cdecl ABI, bounded output layouts; version
     // checked before device calls. The library outlives every symbol and handle.
@@ -60,6 +91,15 @@ fn probe() -> Result<serde_json::Value> {
             )?;
         let device_destroy =
             lib.get::<unsafe extern "C" fn(Handle) -> i32>(b"tobii_device_destroy\0")?;
+        let device_create_ex = lib.get::<unsafe extern "C" fn(
+            Handle,
+            *const c_char,
+            i32,
+            *const LicenseKey,
+            i32,
+            *mut i32,
+            *mut Handle,
+        ) -> i32>(b"tobii_device_create_ex\0")?;
         let info =
             lib.get::<unsafe extern "C" fn(Handle, *mut u8) -> i32>(b"tobii_get_device_info\0")?;
         let capability = lib.get::<unsafe extern "C" fn(Handle, i32, *mut i32) -> i32>(
@@ -106,6 +146,58 @@ fn probe() -> Result<serde_json::Value> {
                     };
                     let model = field(256, 512);
                     let generation = field(512, 768);
+                    let mut license = json!({"requested":!args.unlicensed,"used":false});
+                    if !args.unlicensed && generation == "XR5" && model.starts_with("XR5_PIMAX_DA_")
+                    {
+                        let cleanup = device_destroy(device);
+                        ensure!(cleanup == 0, "Device cleanup: {}", describe(cleanup));
+                        device = std::ptr::null_mut();
+                        let bytes = std::fs::read(
+                            r"C:\Program Files\Pimax\EyeTrackingGuide\EyeTrackingGuide_Data\StreamingAssets\se_license_key_tobii_xr5.bytes",
+                        )?;
+                        ensure!(
+                            !bytes.is_empty() && bytes.len() <= 1024 * 1024 && bytes.len() % 2 == 0,
+                            "Installed Pimax license has an unexpected size"
+                        );
+                        // Match Pimax's UTF-16LE byte representation, preserving exact contents.
+                        // Neither the key nor device URLs/serials enter the output or repository.
+                        let mut units: Vec<u16> = bytes
+                            .as_chunks::<2>()
+                            .0
+                            .iter()
+                            .map(|b| u16::from_le_bytes([b[0], b[1]]))
+                            .collect();
+                        units.push(0);
+                        let key = LicenseKey {
+                            data: units.as_ptr(),
+                            size: bytes.len(),
+                        };
+                        let mut validation = -1;
+                        let code = device_create_ex(
+                            api,
+                            url.as_ptr(),
+                            1,
+                            &key,
+                            1,
+                            &mut validation,
+                            &mut device,
+                        );
+                        license = json!({"requested":true,"used":true,"validation_code":validation,
+                            "validation":license_result(validation),"connection_code":code,"connection_result":describe(code)});
+                        if code != 0 || validation != 0 || device.is_null() {
+                            if !device.is_null() {
+                                let cleanup = device_destroy(device);
+                                ensure!(
+                                    cleanup == 0,
+                                    "Licensed device cleanup: {}",
+                                    describe(cleanup)
+                                );
+                            }
+                            devices.push(json!({"connected":false,"model":model,"generation":generation,
+                                "license":license,"error":format!("Pimax calibration license: {} (code {validation}); connection: {}. Calibration backup access was not granted; no calibration started.", license_result(validation), describe(code))}));
+                            continue;
+                        }
+                    }
                     let mut supports = 0;
                     let cap_code = capability(device, 2, &mut supports); // CALIBRATION_3D
                     let mut size = 0usize;
@@ -117,7 +209,7 @@ fn probe() -> Result<serde_json::Value> {
                         json!({"result":"Not queried: device is not identified as XR5"})
                     };
                     json!({"connected":true,"model":model,"generation":generation,
-                        "calibration_3d":cap_code == 0 && supports != 0,"capability_result":describe(cap_code),"backup":backup})
+                        "license":license,"calibration_3d":cap_code == 0 && supports != 0,"capability_result":describe(cap_code),"backup":backup})
                 };
                 let cleanup = device_destroy(device);
                 ensure!(cleanup == 0, "Device cleanup: {}", describe(cleanup));

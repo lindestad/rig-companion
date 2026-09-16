@@ -21,6 +21,8 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Action {
+    /// Check the modified headset driver's command protocol without clicking.
+    HeadsetBridgeStatus,
     /// Enable SteamVR's gamepad input driver. Restart SteamVR afterward.
     EnableGamepad,
     /// Inspect SteamVR gamepad setting and active input device without clicking.
@@ -59,6 +61,16 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
     let args = Args::parse();
+    if matches!(args.command, Action::HeadsetBridgeStatus) {
+        anyhow::ensure!(!args.demo, "Headset bridge status requires live SteamVR");
+        let vr = rig_companion::steamvr::SteamVr::connect()?;
+        let reply = vr.headset_bridge_request(c"rigcompanion:capabilities:v1")?;
+        println!(
+            "{}",
+            serde_json::json!({"supported":reply == "ok:rigcompanion:gaze-click:v1", "reply":reply})
+        );
+        return Ok(());
+    }
     if matches!(args.command, Action::EnableGamepad | Action::GamepadStatus) {
         anyhow::ensure!(!args.demo, "Gamepad configuration requires live SteamVR");
         let vr = rig_companion::steamvr::SteamVr::connect()?;

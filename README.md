@@ -19,10 +19,10 @@ Use `cargo run --bin rig-companion -- --demo` to exercise the interface without 
 Keep the window open or minimized. Closing it quits the app and releases the hotkeys. **Global shortcuts** are enabled at launch, unless registration fails:
 
 - **F13:** restore 98 cm plus saved horizontal position and heading. Without a captured reference, use the SteamVR origin and forward direction. Waits **0.5 seconds**, then checks tracking stability and applies the correction; sit normally and look forward. The GUI height/capture countdown remains three seconds. Disabling countdown removes the delay for both.
-- **F14:** click the SteamVR dashboard gaze pointer through a virtual Xbox right trigger. Requires ViGEmBus (already installed on this PC). The dashboard must be visible. The first click attaches the gamepad; if SteamVR is still discovering it, press again. Closing the app detaches it.
+- **F14:** click the SteamVR dashboard gaze pointer through the modified sboys3 HMD driver. The dashboard must be visible. The driver supplies and releases a 120 ms native headset system-button pulse. No virtual Xbox controller is created.
 - **Ctrl+Alt+F8:** saved height only; **Ctrl+Alt+F9:** undo/cancel countdown; **Ctrl+Alt+F7:** open dashboard.
 
-F13 always uses 98 cm, without overwriting the saved profile. Disable Global shortcuts to release the bindings. The F14 bridge is intended for the dashboard, not for clicking scene objects in SteamVR Home or games. Its trigger is released after a 100 ms pulse; holding F14 does not repeat or drag. SteamVR's installed `vrcompositor_bindings_gamepad.json` maps right trigger to `/actions/lasermouse/in/leftclick`. Custom gamepad bindings can change this behavior.
+F13 always uses 98 cm, without overwriting the saved profile. Disable Global shortcuts to release the bindings. The F14 bridge is intended for the dashboard, not for clicking scene objects in SteamVR Home or games. Holding F14 does not repeat or drag. `rigctl headset-bridge-status` checks the active driver's capability without clicking. See [driver installation and rollback](docs/driver-installation.md).
 
 **Capture current position** records a full reference only when the floor is already correct. Height nudges do not overwrite the saved reference. Undo covers the last correction in the current connection; a detected external origin change invalidates it.
 

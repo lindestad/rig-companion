@@ -87,7 +87,6 @@ struct Undo {
 }
 
 pub struct Engine {
-    gaze: Option<crate::gaze::GazeClick>,
     backend: Option<Backend>,
     undo: Option<Undo>,
     path: PathBuf,
@@ -98,7 +97,6 @@ impl Engine {
     pub fn new(path: PathBuf, demo: bool) -> Result<Self> {
         let profile = Profile::load(&path)?;
         Ok(Self {
-            gaze: None,
             backend: None,
             undo: None,
             path,
@@ -373,30 +371,8 @@ impl Engine {
                 else {
                     unreachable!()
                 };
-                ensure!(
-                    vr.dashboard_visible()?,
-                    "Open the SteamVR dashboard before using F14"
-                );
-                ensure!(
-                    vr.gamepad_enabled()?,
-                    "SteamVR's gamepad driver is disabled. Run rigctl enable-gamepad, then restart SteamVR."
-                );
-                if self.gaze.is_none() {
-                    self.gaze = Some(crate::gaze::GazeClick::connect()?);
-                }
-                ensure!(
-                    vr.gamepad_connected()?,
-                    "Virtual Xbox attached, but SteamVR has no active gamepad input device. Restart SteamVR after enabling its gamepad driver, or retry after discovery."
-                );
-                ensure!(
-                    vr.dashboard_visible()?,
-                    "Dashboard closed before the click; no click sent"
-                );
-                if let Err(error) = self.gaze.as_mut().unwrap().click() {
-                    self.gaze = None;
-                    return Err(error);
-                }
-                Ok("Windows confirmed the right-trigger pulse. SteamVR gaze selection is not confirmed.".into())
+                vr.headset_gaze_click()?;
+                Ok("Headset driver accepted a 120 ms system-button pulse.".into())
             }
         }
     }
@@ -419,7 +395,6 @@ impl Worker {
             .name("steamvr".into())
             .spawn(move || {
                 let mut engine = Engine {
-                    gaze: None,
                     backend: None,
                     undo: None,
                     path,

@@ -1,5 +1,7 @@
 # Gaze click investigation — September 16
 
+**Resolved later on September 16:** the sboys3 fork now accepts the native HMD system-button command. The user confirmed gaze clicks work in VR. See [installation details](driver-installation.md). The investigation below records why the Xbox route was replaced.
+
 The user's headset test still fails after enabling the gamepad driver. Do not call this fixed. The runtime log now confirms the driver loaded; the earlier disabled-driver diagnosis was a real blocker, but not a complete explanation. The current neutral-device test reads our virtual Xbox from XInput slot 0, so Windows enumeration is working.
 
 ## Two input routes

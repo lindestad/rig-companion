@@ -237,6 +237,44 @@ impl SteamVr {
         }
     }
 
+    pub fn headset_bridge_request(&self, request: &CStr) -> Result<String> {
+        // SAFETY: IVRDebug_001 matches this table; HMD index 0 and bounded response buffer.
+        unsafe {
+            let debug = &*table::<vr::VR_IVRDebug_FnTable>(c"FnTable:IVRDebug_001")?;
+            let mut response = [0i8; 256];
+            debug
+                .DriverDebugRequest
+                .context("Missing driver debug API")?(
+                0,
+                request.as_ptr().cast_mut(),
+                response.as_mut_ptr(),
+                response.len() as u32,
+            );
+            response[255] = 0;
+            Ok(CStr::from_ptr(response.as_ptr())
+                .to_string_lossy()
+                .into_owned())
+        }
+    }
+
+    pub fn headset_gaze_click(&self) -> Result<()> {
+        ensure!(
+            self.dashboard_visible()?,
+            "Open the SteamVR dashboard before using F14"
+        );
+        let capabilities = self.headset_bridge_request(c"rigcompanion:capabilities:v1")?;
+        ensure!(
+            capabilities == "ok:rigcompanion:gaze-click:v1",
+            "Modified sboys3 headset driver is not active (reply: {capabilities:?})"
+        );
+        let response = self.headset_bridge_request(c"rigcompanion:gaze-click:v1")?;
+        ensure!(
+            response == "ok:queued:120ms",
+            "Headset click rejected: {response}"
+        );
+        Ok(())
+    }
+
     pub fn gamepad_enabled(&self) -> Result<bool> {
         // SAFETY: exact SDK settings table and writable error output.
         unsafe {

@@ -1,5 +1,7 @@
 # Testing the first iced implementation
 
+**Latest result, September 16:** the modified sboys3 driver built successfully, its pulse expiry/concurrency tests passed, the live capability handshake succeeded, and the user confirmed F14 gaze clicking works in VR. The app now uses the native HMD system button. Earlier Xbox diagnostics below are historical. F13 was also confirmed working by the user.
+
 ## First session in the Dream Air
 
 1. Start SteamVR normally and put on the headset. Open Rig Companion on the desktop, then view it through SteamVR's desktop panel.

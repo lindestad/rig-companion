@@ -10,6 +10,8 @@ Live result during implementation: API version matched, enumeration succeeded bu
 
 CLI: `rigctl eye-status` reads one diagnostic sample; `rigctl eye-calibration-status` runs the isolated discovery helper. Both may run alongside the GUI. Build all executables with `cargo build --release --bins`.
 
+Follow-up after the user restarted eye tracking in Pimax EVO: the user confirmed the preview works in VR. A fresh diagnostic read reported valid gaze with the registered driver running. The isolated probe connected concurrently to generation **XR5**, model **XR5_PIMAX_DA_K11_RAWH**, and the device reported **3D calibration supported**. Calibration retrieval returned code **2**, **Insufficient permissions when using a restricted feature**, with zero backup bytes. This establishes concurrent discovery and a device capability, not permission to calibrate or verified rollback. The current plain `tobii_device_create` client cannot retrieve a backup. The vendor application's licensed `tobii_device_create_ex` path remains a separate integration question; no license was loaded, calibration started, or tracker settings changed.
+
 The installed Pimax interop declarations were inspected again to confirm cdecl ABI, the 2304-byte device-info layout, calibration-3D capability value 2 and no-storage/transfer field-of-use value 1. Temporary inspection tools and excerpts are removed after use. No proprietary code or binaries are checked in.
 
 Research date: 2026-09-16. Scope: this Windows PC, Dream Air SLAM, sboys3 CustomHeadset 1.3.0, and Rig Companion. Research only; no calibration, runtime restart, device subscription or driver configuration change was performed.

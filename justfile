@@ -19,3 +19,7 @@ build:
 
 demo-check:
     cargo run --bin rigctl -- demo-check
+
+# Run after committing to refresh the permanent installation.
+release:
+    .\scripts\release.ps1

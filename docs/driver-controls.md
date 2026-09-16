@@ -27,3 +27,5 @@ References: [OpenVR tracked camera API](https://github.com/ValveSoftware/openvr/
 ## Verification, 2026-09-16
 
 22 tests, Clippy with warnings denied, formatting and release build passed. Desktop inspection verified the default filter, other-headset groups when unfiltered, embedded number buttons (black level 0 to 0.001), and the hover help. The draft was discarded; live display settings were not changed. SteamVR reported a camera and accepted the toggle command; in-headset Room View appearance still needs user verification. Two CLI shutdown/relaunch cycles exited Rig Companion and SteamVR, preserved Pimax EVO and loaded the custom driver again.
+
+User follow-up: passthrough does **not** display in the headset. SteamVR compositor logs show Room View initialization and receipt of the toggle, and the server logs show Pimax camera queue creation. This confirms command delivery only; the camera stream/display path remains unresolved.

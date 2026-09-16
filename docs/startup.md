@@ -17,3 +17,7 @@ Use `target\release\rigctl.exe quit` from this repo to signal the running GUI. T
 Verification on 2026-09-16: the installed shortcut launches the app correctly and shows the new icon. The Windows `Get-StartApps` inventory still omits it on this PC, even after shortcut notification and a Start menu host refresh; Start/search visibility remains unverified. Do not treat the presence of the `.lnk` alone as proof that Windows search has indexed it.
 
 F15 and **Dashboard · F15** now toggle: open the desktop panel when closed, close the dashboard when visible. Closing uses SteamVR's compositor `system_dashboard_toggle` command through `vrcmd.exe`, then checks the dashboard visibility. Valve's developer describes this command [here](https://steamcommunity.com/app/250820/discussions/0/4036976070312856172/?l=russian). The gaze-click pulse remains exclusively on F14.
+
+## Post-commit delivery
+
+After every commit run `scripts/release.ps1` (or `just release`). It builds all release binaries after the commit, closes a running live app through its quit signal, overwrites the same files in `%LOCALAPPDATA%\Programs\Rig Companion`, verifies SHA-256 hashes and reopens the app if it was running. The main executable always remains `rig-companion.exe`. This workflow is required by the repository `AGENTS.md`.

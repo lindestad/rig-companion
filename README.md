@@ -52,5 +52,6 @@ The correction currently changes SteamVR's standing/floor origin, preserving the
 - [Implementation plan](docs/plan.md): ordered milestones and acceptance checks.
 - [Testing and first headset session](docs/testing.md)
 - [SteamVR source research](docs/seated-reference-research.md): existing sboys3 behaviour, origin APIs, correction mathematics and source links.
+- [Dream Air eye-tracking research](docs/eye-tracking-research.md): live monitoring, calibration feasibility, and findings from the installed Pimax software.
 
 Project location: `~/dev/rig-companion`. Keep all project work here. Temporary upstream checkouts are ignored under `.research-seated-20260914/`.

@@ -258,6 +258,63 @@ impl SteamVr {
         )
     }
 
+    /// Briefly request streaming and inspect headers only; never copy camera pixels.
+    pub fn camera_status(&self) -> Result<serde_json::Value> {
+        // SAFETY: matching SDK table, initialized output structures, owned context.
+        unsafe {
+            let camera =
+                &*table::<vr::VR_IVRTrackedCamera_FnTable>(c"FnTable:IVRTrackedCamera_006")?;
+            let mut present = false;
+            let has_code = camera.HasCamera.context("Missing camera API")?(0, &mut present);
+            let acquire = camera
+                .AcquireVideoStreamingService
+                .context("Missing stream API")?;
+            let release = camera
+                .ReleaseVideoStreamingService
+                .context("Missing release API")?;
+            let get_frame = camera
+                .GetVideoStreamFrameBuffer
+                .context("Missing frame API")?;
+            let mut handle = 0;
+            let acquire_code = if present && has_code == 0 {
+                acquire(0, &mut handle)
+            } else {
+                -1
+            };
+            let mut sequences = std::collections::BTreeSet::new();
+            let mut last_code = None;
+            let mut dimensions = None;
+            let mut release_code = None;
+            if acquire_code == 0 {
+                let deadline = Instant::now() + Duration::from_secs(3);
+                while Instant::now() < deadline {
+                    let mut header = vr::CameraVideoStreamFrameHeader_t::default();
+                    let code = get_frame(
+                        handle,
+                        vr::EVRTrackedCameraFrameType_VRTrackedCameraFrameType_Distorted,
+                        std::ptr::null_mut(),
+                        0,
+                        &mut header,
+                        size_of::<vr::CameraVideoStreamFrameHeader_t>() as u32,
+                    );
+                    last_code = Some(code);
+                    if code == 0 {
+                        sequences.insert(header.nFrameSequence);
+                        dimensions = Some([header.nWidth, header.nHeight]);
+                    }
+                    thread::sleep(Duration::from_millis(30));
+                }
+                release_code = Some(release(handle));
+            }
+            Ok(
+                serde_json::json!({"has_camera":present,"has_camera_code":has_code,
+                "acquire_code":acquire_code,"last_frame_code":last_code,"release_code":release_code,
+                "dimensions":dimensions,"distinct_sequences":sequences.len(),
+                "frames_advancing":sequences.len()>1,"pixels_captured":false}),
+            )
+        }
+    }
+
     pub fn passthrough(&self) -> Result<String> {
         unsafe {
             let settings = &*table::<vr::VR_IVRSettings_FnTable>(c"FnTable:IVRSettings_003")?;

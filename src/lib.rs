@@ -21,4 +21,5 @@ pub fn lock_instance(demo: bool) -> anyhow::Result<std::fs::File> {
     file.try_lock().context("Rig Companion is already running. Close it before starting another instance or using rigctl.")?;
     Ok(file)
 }
+pub mod game_launch;
 pub mod gaze;

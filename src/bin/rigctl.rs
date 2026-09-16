@@ -21,6 +21,13 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Action {
+    /// Inspect camera frame headers for three seconds without saving images; GUI may remain open.
+    CameraStatus,
+    /// Inspect prerequisite order, installed paths and running processes without launching.
+    LauncherStatus {
+        #[arg(value_enum)]
+        game: rig_companion::game_launch::Game,
+    },
     /// Ask the running GUI to shut down itself and SteamVR cleanly.
     Quit,
     /// Read one eye diagnostic snapshot; may run alongside the GUI.
@@ -67,6 +74,19 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
     let args = Args::parse();
+    if matches!(args.command, Action::CameraStatus) {
+        anyhow::ensure!(!args.demo, "Camera diagnostics require live SteamVR");
+        let vr = rig_companion::steamvr::SteamVr::connect()?;
+        println!("{}", serde_json::to_string_pretty(&vr.camera_status()?)?);
+        return Ok(());
+    }
+    if let Action::LauncherStatus { game } = args.command {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&rig_companion::game_launch::status(game)?)?
+        );
+        return Ok(());
+    }
     if matches!(args.command, Action::Quit) {
         rig_companion::ipc::request_quit(args.demo)?;
         println!(

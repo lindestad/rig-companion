@@ -32,6 +32,10 @@ The **Driver settings** page reads the installed sboys defaults and overrides. I
 
 ## CLI and development
 
+The main page includes five [game launcher shortcuts](docs/game-launchers.md). Each ensures SimPro and SimHub are running; iRacing additionally starts MAIRA when needed. `rigctl launcher-status iracing` inspects the configuration without launching.
+
+`rigctl camera-status` briefly acquires the camera stream and checks frame headers for three seconds, then releases it. It does not copy or save camera pixels. This can run alongside the GUI. Passthrough remains unresolved; see [camera findings](docs/driver-controls.md).
+
 The main view includes a compact gaze preview. The **Eye tracking** page displays the custom driver's left/right gaze estimates at four updates per second, with validity and stale-data indicators. Enable **Keep live in VR** to keep the preview updating when Windows focus moves elsewhere. The calibration availability check is read-only; native eye calibration is still experimental and has not been implemented. See [eye-tracking findings](docs/eye-tracking-research.md).
 
 `rigctl eye-status` and `rigctl eye-calibration-status` work alongside the GUI. Build with `cargo build --release --bins` to include the isolated vendor discovery helper.

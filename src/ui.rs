@@ -38,6 +38,13 @@ pub struct App {
     quit_queued: bool,
     quit_error: Option<String>,
     logo: widget::image::Handle,
+    game_icons: Vec<widget::image::Handle>,
+    launch_busy: bool,
+    launch_status: String,
+    launch_error: bool,
+    launch_cooldown: Option<Instant>,
+    launch_cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    launch_progress: Option<std::sync::mpsc::Receiver<String>>,
     quit_signal: Option<rig_companion::ipc::QuitSignal>,
     focused: bool,
     keep_eyes_live: bool,
@@ -51,6 +58,8 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Launch(rig_companion::game_launch::Game),
+    LaunchDone(Result<String, String>),
     Quit,
     QuitDone(Result<(), String>),
     Passthrough,
@@ -108,6 +117,19 @@ impl App {
             quitting: false,
             quit_queued: false,
             quit_error: None,
+            game_icons: [
+                include_bytes!("../assets/game-icons/iracing.rgba").as_slice(),
+                include_bytes!("../assets/game-icons/content_manager.rgba").as_slice(),
+                include_bytes!("../assets/game-icons/rally.rgba").as_slice(),
+                include_bytes!("../assets/game-icons/evo.rgba").as_slice(),
+                include_bytes!("../assets/game-icons/lmu.rgba").as_slice(),
+            ].into_iter().map(|bytes| widget::image::Handle::from_rgba(64,64,bytes)).collect(),
+            launch_busy: false,
+            launch_status: "SimPro + SimHub · MAIRA for iRacing".into(),
+            launch_error: false,
+            launch_cooldown: None,
+            launch_cancelled: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            launch_progress: None,
             logo: widget::image::Handle::from_rgba(64,64,include_bytes!("../assets/icon.rgba").as_slice()),
             focused: true,
             keep_eyes_live: false,
@@ -122,7 +144,52 @@ impl App {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::Launch(game) => {
+                if self.launch_busy
+                    || self.quitting
+                    || self.quit_queued
+                    || self
+                        .launch_cooldown
+                        .is_some_and(|deadline| Instant::now() < deadline)
+                {
+                    return Task::none();
+                }
+                if self.state.demo {
+                    self.launch_status = format!("{} · demo, no apps launched", game.label());
+                    return Task::none();
+                }
+                self.launch_busy = true;
+                self.launch_error = false;
+                self.launch_status = format!("Preparing {}…", game.label());
+                let (sender, receiver) = std::sync::mpsc::channel();
+                self.launch_progress = Some(receiver);
+                self.launch_cancelled =
+                    std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let cancelled = self.launch_cancelled.clone();
+                return Task::perform(
+                    async move {
+                        tokio::task::spawn_blocking(move || {
+                            rig_companion::game_launch::launch(game, &cancelled, |status| {
+                                let _ = sender.send(status);
+                            })
+                        })
+                        .await
+                        .map_err(|e| e.to_string())?
+                        .map_err(|e| format!("{e:#}"))
+                    },
+                    Message::LaunchDone,
+                );
+            }
+            Message::LaunchDone(result) => {
+                self.launch_busy = false;
+                self.launch_progress = None;
+                self.launch_cooldown = Some(Instant::now() + Duration::from_secs(5));
+                self.launch_error = result.is_err();
+                self.launch_status = result.unwrap_or_else(|error| error);
+            }
             Message::Quit => {
+                self.launch_cancelled
+                    .store(true, std::sync::atomic::Ordering::Relaxed);
                 if self.settings.busy() {
                     self.quit_queued = true;
                     self.quit_error = Some("Finishing settings operation before quitting…".into());
@@ -241,6 +308,11 @@ impl App {
                 }
             }
             Message::Tick => {
+                if let Some(progress) = &self.launch_progress {
+                    for status in progress.try_iter() {
+                        self.launch_status = status;
+                    }
+                }
                 if !self.quitting
                     && ((self.quit_queued && !self.settings.busy())
                         || self.quit_signal.as_ref().is_some_and(|s| s.requested()))
@@ -608,7 +680,7 @@ impl App {
         } else {
             MUTED
         };
-        let footer = row![
+        let footer = column![
             column![
                 text(&self.state.headset).size(14).font(bold()),
                 text(if self.state.demo {
@@ -620,29 +692,34 @@ impl App {
                 .color(MUTED)
             ]
             .spacing(5),
-            Space::new().width(Fill),
-            button(
-                text(if self.state.connected {
-                    "Reconnect"
-                } else {
-                    "Connect SteamVR"
-                })
-                .size(14)
-            )
-            .padding([12, 16])
-            .on_press_maybe(free.then_some(Message::Connect))
-            .style(secondary),
-            button(text("Dashboard · F15").size(14))
+            row![
+                button(
+                    text(if self.state.connected {
+                        "Reconnect"
+                    } else {
+                        "Connect SteamVR"
+                    })
+                    .size(14)
+                )
                 .padding([12, 16])
-                .on_press_maybe((self.state.connected && free).then_some(Message::Dashboard))
+                .on_press_maybe(free.then_some(Message::Connect))
                 .style(secondary),
-            button(text("VR gaze click · F14").size(14))
-                .padding([12, 16])
-                .on_press_maybe((self.state.connected && free).then_some(Message::GazeClick))
-                .style(secondary)
+                button(text("Dashboard · F15").size(14))
+                    .padding([12, 16])
+                    .on_press_maybe((self.state.connected && free).then_some(Message::Dashboard))
+                    .style(secondary),
+                button(text("VR gaze click · F14").size(14))
+                    .padding([12, 16])
+                    .on_press_maybe((self.state.connected && free).then_some(Message::GazeClick))
+                    .style(secondary),
+                button(text("Camera · F16").size(14))
+                    .padding([12, 16])
+                    .on_press_maybe((self.state.connected && free).then_some(Message::Passthrough))
+                    .style(secondary)
+            ]
+            .spacing(10)
         ]
-        .spacing(10)
-        .align_y(alignment::Vertical::Center);
+        .spacing(12);
         let shortcuts =
             row![
             checkbox(self.hotkeys.is_some())
@@ -663,6 +740,7 @@ impl App {
         let content = column![
             self.navigation(),
             header,
+            self.game_launchers(),
             self.compact_eyes(),
             container(text(notice).size(14).color(notice_color))
                 .padding([10, 14])
@@ -681,6 +759,48 @@ impl App {
             .into()
     }
 
+    fn game_launchers(&self) -> Element<'_, Message> {
+        let enabled = !self.launch_busy
+            && !self.quitting
+            && !self.quit_queued
+            && self
+                .launch_cooldown
+                .is_none_or(|deadline| Instant::now() >= deadline);
+        let mut games = row![].spacing(10);
+        for (index, game) in rig_companion::game_launch::Game::ALL
+            .into_iter()
+            .enumerate()
+        {
+            games = games.push(
+                button(
+                    container(
+                        column![
+                            widget::image(self.game_icons[index].clone())
+                                .width(36)
+                                .height(36),
+                            text(game.label()).size(14).font(bold())
+                        ]
+                        .spacing(9)
+                        .align_x(alignment::Horizontal::Center),
+                    )
+                    .center_x(Fill),
+                )
+                .width(Fill)
+                .padding([12, 8])
+                .style(secondary)
+                .on_press_maybe(enabled.then_some(Message::Launch(game))),
+            );
+        }
+        column![
+            games,
+            text(&self.launch_status)
+                .size(12)
+                .color(if self.launch_error { AMBER } else { MUTED })
+        ]
+        .spacing(8)
+        .into()
+    }
+
     fn navigation(&self) -> Element<'_, Message> {
         column![
             row![
@@ -689,9 +809,6 @@ impl App {
                     .style(secondary),
                 button("Eye tracking")
                     .on_press(Message::EyePage(true))
-                    .style(secondary),
-                button("Camera · F16")
-                    .on_press(Message::Passthrough)
                     .style(secondary),
                 button("Driver settings")
                     .on_press(Message::SettingsPage)

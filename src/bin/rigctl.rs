@@ -21,6 +21,10 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Action {
+    /// Enable SteamVR's gamepad input driver. Restart SteamVR afterward.
+    EnableGamepad,
+    /// Inspect SteamVR gamepad setting and active input device without clicking.
+    GamepadStatus,
     /// Inspect current tracking without modifying it. Output is JSON.
     Status,
     /// Store a desired seated height in centimetres; does not modify SteamVR.
@@ -55,6 +59,19 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
     let args = Args::parse();
+    if matches!(args.command, Action::EnableGamepad | Action::GamepadStatus) {
+        anyhow::ensure!(!args.demo, "Gamepad configuration requires live SteamVR");
+        let vr = rig_companion::steamvr::SteamVr::connect()?;
+        let was_enabled = vr.gamepad_enabled()?;
+        if matches!(args.command, Action::EnableGamepad) {
+            vr.enable_gamepad()?;
+        }
+        println!(
+            "{}",
+            serde_json::json!({"was_enabled":was_enabled,"enabled":vr.gamepad_enabled()?,"connected":vr.gamepad_connected()?,"restart_required":!was_enabled && matches!(args.command, Action::EnableGamepad)})
+        );
+        return Ok(());
+    }
     if matches!(args.command, Action::DemoCheck) {
         let temp = tempfile::tempdir()?;
         let mut engine = Engine::new(temp.path().join("profile.json"), true)?;

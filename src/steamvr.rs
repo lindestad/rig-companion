@@ -236,6 +236,72 @@ impl SteamVr {
             ))
         }
     }
+
+    pub fn gamepad_enabled(&self) -> Result<bool> {
+        // SAFETY: exact SDK settings table and writable error output.
+        unsafe {
+            let settings = &*table::<vr::VR_IVRSettings_FnTable>(c"FnTable:IVRSettings_003")?;
+            let mut error = 0;
+            let enabled = settings.GetBool.context("Missing settings API")?(
+                c"driver_gamepad".as_ptr().cast_mut(),
+                c"enable".as_ptr().cast_mut(),
+                &mut error,
+            );
+            ensure!(
+                error == 0,
+                "Cannot read gamepad driver setting (error {error})"
+            );
+            Ok(enabled)
+        }
+    }
+
+    pub fn enable_gamepad(&self) -> Result<()> {
+        unsafe {
+            let settings = &*table::<vr::VR_IVRSettings_FnTable>(c"FnTable:IVRSettings_003")?;
+            let mut error = 0;
+            settings.SetBool.context("Missing settings API")?(
+                c"driver_gamepad".as_ptr().cast_mut(),
+                c"enable".as_ptr().cast_mut(),
+                true,
+                &mut error,
+            );
+            ensure!(
+                error == 0 && self.gamepad_enabled()?,
+                "Cannot enable gamepad driver (error {error})"
+            );
+        }
+        Ok(())
+    }
+
+    pub fn gamepad_connected(&self) -> Result<bool> {
+        unsafe {
+            let system = self.system();
+            for index in 0..vr::k_unMaxTrackedDeviceCount {
+                if !system
+                    .IsTrackedDeviceConnected
+                    .context("Missing device API")?(index)
+                {
+                    continue;
+                }
+                let mut name = [0i8; 128];
+                let mut error = 0;
+                system
+                    .GetStringTrackedDeviceProperty
+                    .context("Missing property API")?(
+                    index,
+                    vr::ETrackedDeviceProperty_Prop_TrackingSystemName_String,
+                    name.as_mut_ptr(),
+                    name.len() as u32,
+                    &mut error,
+                );
+                name[127] = 0;
+                if error == 0 && CStr::from_ptr(name.as_ptr()).to_bytes() == b"gamepad" {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
 }
 
 // SAFETY: callers request the exact SDK table matching T, after successful initialization.

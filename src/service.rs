@@ -377,9 +377,17 @@ impl Engine {
                     vr.dashboard_visible()?,
                     "Open the SteamVR dashboard before using F14"
                 );
+                ensure!(
+                    vr.gamepad_enabled()?,
+                    "SteamVR's gamepad driver is disabled. Run rigctl enable-gamepad, then restart SteamVR."
+                );
                 if self.gaze.is_none() {
                     self.gaze = Some(crate::gaze::GazeClick::connect()?);
                 }
+                ensure!(
+                    vr.gamepad_connected()?,
+                    "Virtual Xbox attached, but SteamVR has no active gamepad input device. Restart SteamVR after enabling its gamepad driver, or retry after discovery."
+                );
                 ensure!(
                     vr.dashboard_visible()?,
                     "Dashboard closed before the click; no click sent"

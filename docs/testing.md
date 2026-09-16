@@ -32,6 +32,8 @@ September 16: 13 unit tests pass, including F13 default-origin restoration, save
 
 ## Runtime behaviour and limitations
 
+September 16 gaze-click diagnosis: the actual SteamVR 2.17 installation defaults `driver_gamepad.enable` to false, and vrserver logged that it skipped loading the driver. ViGEm attachment alone did not establish an active OpenVR gamepad. Enable the setting and restart SteamVR before testing. `rigctl enable-gamepad` changes it through the live settings API; `rigctl gamepad-status` reads the setting and checks for an active device with tracking-system name `gamepad`. The GUI now refuses to report a click when either prerequisite is missing. The setting was enabled in this PC's user configuration while SteamVR was stopped, with the previous file backed up under ignored `target/steamvr-before-gamepad-*.vrsettings`. Gaze selection after restart remains to be verified.
+
 This build commits the standing-to-raw origin through ChaperoneSetup. It refreshes the working copy before each change, preserves other calibration fields, and verifies the resulting live transform. The change can persist in SteamVR after exiting the app. It is not a transient preview session. Undo is held in memory and invalidated when a different live origin/universe is detected; restarting the companion loses undo history.
 
 The seated origin is deliberately not overwritten by the standing correction. A game with its own seated recenter may behave differently from the lobby; test those transitions before expanding the correction policy. The box's Windows mouse and keyboard firmware remains a separate future component.

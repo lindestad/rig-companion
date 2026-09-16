@@ -31,11 +31,26 @@ pub struct App {
     pending: Option<(Instant, Command)>,
     hotkeys: Option<Hotkeys>,
     local_message: Option<String>,
+    eye_page: bool,
+    focused: bool,
+    keep_eyes_live: bool,
+    eye_pending: bool,
+    eye_reading: Option<rig_companion::eyes::Reading>,
+    eye_error: Option<String>,
+    calibration_check_pending: bool,
+    calibration_status: String,
     _lock: std::fs::File,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    EyePage(bool),
+    Focused(bool),
+    KeepEyesLive(bool),
+    EyeTick,
+    EyeRead(Result<rig_companion::eyes::Reading, String>),
+    CheckEyeCalibration,
+    EyeCalibrationResult(String),
     Tick,
     Connect,
     Height(String),
@@ -74,12 +89,87 @@ impl App {
             pending: None,
             hotkeys,
             local_message,
+            eye_page: false,
+            focused: true,
+            keep_eyes_live: false,
+            eye_pending: false,
+            eye_reading: None,
+            eye_error: None,
+            calibration_check_pending: false,
+            calibration_status: "Check whether Pimax exposes a tracker with 3D calibration and a retrievable backup. This check does not change your calibration.".into(),
             _lock: lock,
         }
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::CheckEyeCalibration => {
+                if !self.calibration_check_pending && !self.state.demo {
+                    self.calibration_check_pending = true;
+                    return Task::perform(
+                        async {
+                            match tokio::task::spawn_blocking(
+                                rig_companion::eye_calibration::inspect,
+                            )
+                            .await
+                            {
+                                Ok(Ok(result)) => rig_companion::eye_calibration::summary(&result),
+                                Ok(Err(e)) => format!("{e:#}"),
+                                Err(e) => e.to_string(),
+                            }
+                        },
+                        Message::EyeCalibrationResult,
+                    );
+                }
+            }
+            Message::EyeCalibrationResult(status) => {
+                self.calibration_check_pending = false;
+                self.calibration_status = status;
+            }
+            Message::EyePage(value) => {
+                self.eye_page = value;
+                self.eye_reading = None;
+            }
+            Message::Focused(value) => {
+                self.focused = value;
+                if !value && !self.keep_eyes_live {
+                    self.eye_reading = None;
+                }
+            }
+            Message::KeepEyesLive(value) => self.keep_eyes_live = value,
+            Message::EyeTick => {
+                if self.eye_page
+                    && (self.focused || self.keep_eyes_live)
+                    && !self.eye_pending
+                    && !self.state.demo
+                {
+                    self.eye_pending = true;
+                    return Task::perform(
+                        async {
+                            tokio::task::spawn_blocking(rig_companion::eyes::read)
+                                .await
+                                .map_err(|e| e.to_string())?
+                                .map_err(|e| format!("{e:#}"))
+                        },
+                        Message::EyeRead,
+                    );
+                }
+            }
+            Message::EyeRead(result) => {
+                self.eye_pending = false;
+                if self.eye_page && (self.focused || self.keep_eyes_live) {
+                    match result {
+                        Ok(reading) => {
+                            self.eye_reading = Some(reading);
+                            self.eye_error = None;
+                        }
+                        Err(e) => {
+                            self.eye_reading = None;
+                            self.eye_error = Some(e);
+                        }
+                    }
+                }
+            }
             Message::Tick => {
                 let fresh = self.worker.snapshot();
                 if fresh.revision != self.state.revision {
@@ -195,7 +285,21 @@ impl App {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick)
+        let mut subscriptions = vec![
+            iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick),
+            iced::event::listen_with(|event, _, _| match event {
+                iced::Event::Window(iced::window::Event::Focused) => Some(Message::Focused(true)),
+                iced::Event::Window(iced::window::Event::Unfocused) => {
+                    Some(Message::Focused(false))
+                }
+                _ => None,
+            }),
+        ];
+        if self.eye_page && (self.focused || self.keep_eyes_live) {
+            subscriptions
+                .push(iced::time::every(Duration::from_millis(250)).map(|_| Message::EyeTick));
+        }
+        Subscription::batch(subscriptions)
     }
 
     pub fn theme(&self) -> Theme {
@@ -213,6 +317,9 @@ impl App {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
+        if self.eye_page {
+            return self.eye_view();
+        }
         let free = !self.state.busy && self.pending.is_none();
         let ready = self.state.ready && free;
         let status_color = if self.state.demo {
@@ -479,6 +586,13 @@ impl App {
             .align_y(alignment::Vertical::Center);
 
         let content = column![
+            row![
+                button("Seated reference").style(primary_style),
+                button("Eye tracking")
+                    .on_press(Message::EyePage(true))
+                    .style(secondary)
+            ]
+            .spacing(10),
             header,
             intro,
             container(text(notice).size(14).color(notice_color))
@@ -496,6 +610,138 @@ impl App {
             .height(Fill)
             .width(Fill)
             .into()
+    }
+
+    fn eye_view(&self) -> Element<'_, Message> {
+        let paused = !self.focused && !self.keep_eyes_live;
+        let reading = self.eye_reading.as_ref();
+        let usable = !paused && self.eye_error.is_none() && reading.is_some_and(|r| r.usable());
+        let status = if self.state.demo {
+            "PREVIEW UNAVAILABLE IN DEMO"
+        } else if paused {
+            "PAUSED"
+        } else if self.eye_error.is_some() {
+            "WAITING FOR DIAGNOSTICS"
+        } else if reading.is_some_and(|r| !r.live()) {
+            "STALE / DRIVER OFFLINE"
+        } else if reading.is_some_and(|r| !r.gaze.valid) {
+            "NO VALID GAZE"
+        } else if usable {
+            "DRIVER REPORTS VALID"
+        } else {
+            "WAITING"
+        };
+        let eye = |label: &'static str, angles: Option<rig_companion::eyes::Angles>, color| {
+            let degrees = if usable {
+                angles.map(|a| a.degrees())
+            } else {
+                None
+            };
+            panel(
+                column![
+                    text(label).size(14).font(bold()).color(color),
+                    canvas(EyePlot { degrees, color }).width(Fill).height(260),
+                    text(
+                        degrees
+                            .map(|d| format!("X {:+.1}°     Y {:+.1}°", d[0], d[1]))
+                            .unwrap_or_else(|| "No live estimate".into())
+                    )
+                    .size(22)
+                    .font(bold()),
+                    text("Driver angular coordinates · ±30° plot")
+                        .size(12)
+                        .color(MUTED),
+                ]
+                .spacing(12),
+            )
+            .width(Fill)
+        };
+        let age = reading
+            .map(|r| format!("Telemetry written {:.2} s ago", r.age_ms as f64 / 1000.0))
+            .unwrap_or_else(|| "No telemetry received".into());
+        let content = column![
+            row![button("Seated reference").on_press(Message::EyePage(false)).style(secondary), button("Eye tracking").style(primary_style)].spacing(10),
+            row![text("Eye tracking").size(36).font(bold()), Space::new().width(Fill), text(status).size(13).color(if usable { ACCENT } else { AMBER })].align_y(alignment::Vertical::Center),
+            text("See where your headset thinks you are looking.").size(18).color(MUTED),
+            row![eye("LEFT GAZE ESTIMATE", reading.map(|r| r.gaze.left), ACCENT), eye("RIGHT GAZE ESTIMATE", reading.map(|r| r.gaze.right), Color::from_rgb8(142, 190, 255))].spacing(18),
+            panel(column![
+                row![text(if paused { "Preview paused while unfocused".into() } else { age }).size(15), Space::new().width(Fill), checkbox(self.keep_eyes_live).label("Keep live in VR").on_toggle(Message::KeepEyesLive)].spacing(16),
+                text(self.eye_error.as_deref().unwrap_or("4 updates/second from the custom driver. File freshness does not prove a new eye-camera sample; the driver can reuse cached data. These are gaze estimates, not eye images.")).size(14).color(MUTED),
+            ].spacing(12)),
+            panel(column![
+                section("EYE CALIBRATION", "Native tracker calibration"),
+                text(&self.calibration_status).size(16),
+                button(if self.calibration_check_pending { "Checking tracker…" } else { "Check calibration availability" })
+                    .on_press_maybe((!self.calibration_check_pending && !self.state.demo).then_some(Message::CheckEyeCalibration)).style(secondary).padding(12),
+            ].spacing(12)),
+            text("F13 recenter · F14 gaze click · F15 dashboard toggle stay active on this page.").size(14).color(MUTED),
+        ].spacing(20).max_width(1120);
+        container(scrollable(container(content).padding(24).center_x(Fill)))
+            .height(Fill)
+            .width(Fill)
+            .into()
+    }
+}
+
+struct EyePlot {
+    degrees: Option<[f64; 2]>,
+    color: Color,
+}
+impl canvas::Program<Message> for EyePlot {
+    type State = ();
+    fn draw(
+        &self,
+        _: &(),
+        renderer: &Renderer,
+        _: &Theme,
+        bounds: Rectangle,
+        _: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let center = Point::new(bounds.width / 2.0, bounds.height / 2.0);
+        let radius = bounds.height.min(bounds.width) / 2.0 - 16.0;
+        frame.fill_rectangle(Point::ORIGIN, bounds.size(), INNER);
+        for fraction in [0.33, 0.66, 1.0] {
+            frame.stroke(
+                &canvas::Path::circle(center, radius * fraction),
+                canvas::Stroke::default().with_color(LINE),
+            );
+        }
+        for (a, b) in [
+            (
+                Point::new(center.x - radius, center.y),
+                Point::new(center.x + radius, center.y),
+            ),
+            (
+                Point::new(center.x, center.y - radius),
+                Point::new(center.x, center.y + radius),
+            ),
+        ] {
+            frame.stroke(
+                &canvas::Path::line(a, b),
+                canvas::Stroke::default().with_color(LINE),
+            );
+        }
+        if let Some([x, y]) = self.degrees {
+            let point = Point::new(
+                center.x + (x as f32 / 30.0).clamp(-1.0, 1.0) * radius,
+                center.y - (y as f32 / 30.0).clamp(-1.0, 1.0) * radius,
+            );
+            frame.stroke(
+                &canvas::Path::line(center, point),
+                canvas::Stroke::default()
+                    .with_color(self.color)
+                    .with_width(1.5),
+            );
+            frame.stroke(
+                &canvas::Path::circle(point, 12.0),
+                canvas::Stroke::default()
+                    .with_color(self.color)
+                    .with_width(2.0),
+            );
+            frame.fill(&canvas::Path::circle(point, 4.0), self.color);
+        }
+        vec![frame.into_geometry()]
     }
 }
 

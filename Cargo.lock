@@ -2221,10 +2221,12 @@ dependencies = [
  "directories",
  "glam 0.30.10",
  "iced",
+ "libloading",
  "openvr_sys",
  "serde",
  "serde_json",
  "tempfile",
+ "tokio",
  "vigem-client",
  "windows-sys 0.61.2",
 ]

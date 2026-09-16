@@ -29,6 +29,10 @@ F13 always uses 98 cm, without overwriting the saved profile. Disable Global sho
 
 ## CLI and development
 
+The **Eye tracking** page displays the custom driver's left/right gaze estimates at four updates per second, with validity and stale-data indicators. Enable **Keep live in VR** to keep the preview updating when Windows focus moves elsewhere. The calibration availability check is read-only; native eye calibration is still experimental and has not been implemented. See [eye-tracking findings](docs/eye-tracking-research.md).
+
+`rigctl eye-status` and `rigctl eye-calibration-status` work alongside the GUI. Build with `cargo build --release --bins` to include the isolated vendor discovery helper.
+
 ```powershell
 cargo run --bin rigctl -- status
 cargo run --bin rigctl -- set-height 98

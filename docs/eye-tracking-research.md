@@ -1,5 +1,17 @@
 # Dream Air gaze display and calibration
 
+## Implementation follow-up, September 16
+
+The companion now has an **Eye tracking** page: two angular plots, degrees, driver validity and diagnostic file age. Reads run off the UI/SteamVR worker at 250 ms intervals only on this page while focused; **Keep live in VR** allows unfocused viewing. Invalid, stale, offline and temporarily unreadable samples hide the markers. The recorded PID must match a running vrserver process. Both diagnostic locations are supported. No continuous gaze logging is added. Existing F13/F14/F15 commands stay active.
+
+The **Check calibration availability** button runs a separate `eye-probe.exe` process with a 12-second timeout. It pins Pimax EyeTrackingGuide's installed Tobii ABI to 5.9.0.2, enumerates devices, queries model/generation and 3D calibration capability, and checks calibration retrieval on XR5. It only counts retrieval bytes, without saving a backup or claiming rollback is verified. It does not load vendor license files, subscribe to gaze streams, start calibration, change lens geometry or restart services.
+
+Live result during implementation: API version matched, enumeration succeeded but returned **zero devices**. The driver file was fresh, with `valid: false`, and there was no Tobii-named runtime process in the process snapshot. This does not establish the cause; headset power state, Pimax eye-tracking enablement and runtime availability need checking. It prevented testing device coexistence, calibration capability, backup and calibration writes. The in-app button makes this discovery repeatable once eye tracking is active. Native calibration is **not implemented** yet; no start-calibration control is advertised.
+
+CLI: `rigctl eye-status` reads one diagnostic sample; `rigctl eye-calibration-status` runs the isolated discovery helper. Both may run alongside the GUI. Build all executables with `cargo build --release --bins`.
+
+The installed Pimax interop declarations were inspected again to confirm cdecl ABI, the 2304-byte device-info layout, calibration-3D capability value 2 and no-storage/transfer field-of-use value 1. Temporary inspection tools and excerpts are removed after use. No proprietary code or binaries are checked in.
+
 Research date: 2026-09-16. Scope: this Windows PC, Dream Air SLAM, sboys3 CustomHeadset 1.3.0, and Rig Companion. Research only; no calibration, runtime restart, device subscription or driver configuration change was performed.
 
 ## Conclusions

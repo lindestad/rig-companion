@@ -10,10 +10,12 @@ clap = { version = "4", features = ["derive"] }
 directories = "6"
 glam = "0.30"
 iced = { version = "0.14", default-features = false, features = ["wgpu", "tokio", "canvas"] }
+libloading = "0.8"
 openvr_sys = "2.1.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tempfile = "3"
+tokio = { version = "1.53.1", features = ["rt"] }
 vigem-client = "0.1.4"
 windows-sys = { version = "0.61", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_UI_Input_XboxController", "Win32_System_Diagnostics_ToolHelp"] }
 

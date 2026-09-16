@@ -54,6 +54,10 @@ fn config() -> Result<LaunchConfig> {
 }
 
 pub fn process_running(name: &str) -> Result<bool> {
+    process_matches(name, None)
+}
+
+pub fn process_matches(name: &str, pid: Option<u32>) -> Result<bool> {
     // SAFETY: snapshot owns its handle; PROCESSENTRY32W is initialized to the ABI size.
     unsafe {
         let handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -74,7 +78,9 @@ pub fn process_running(name: &str) -> Result<bool> {
                 .iter()
                 .position(|&v| v == 0)
                 .unwrap_or(entry.szExeFile.len());
-            if String::from_utf16_lossy(&entry.szExeFile[..end]).eq_ignore_ascii_case(name) {
+            if String::from_utf16_lossy(&entry.szExeFile[..end]).eq_ignore_ascii_case(name)
+                && pid.is_none_or(|pid| pid == entry.th32ProcessID)
+            {
                 found = true;
                 break;
             }

@@ -21,6 +21,10 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Action {
+    /// Read one eye diagnostic snapshot; may run alongside the GUI.
+    EyeStatus,
+    /// Query calibration capabilities in an isolated helper; no calibration writes.
+    EyeCalibrationStatus,
     /// Check the modified headset driver's command protocol without clicking.
     HeadsetBridgeStatus,
     /// Enable SteamVR's gamepad input driver. Restart SteamVR afterward.
@@ -61,6 +65,22 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
     let args = Args::parse();
+    if matches!(args.command, Action::EyeCalibrationStatus) {
+        anyhow::ensure!(
+            !args.demo,
+            "Calibration discovery requires the live vendor runtime"
+        );
+        println!("{}", rig_companion::eye_calibration::inspect()?);
+        return Ok(());
+    }
+    if matches!(args.command, Action::EyeStatus) {
+        anyhow::ensure!(!args.demo, "Eye diagnostics require the live driver");
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&rig_companion::eyes::read()?)?
+        );
+        return Ok(());
+    }
     if matches!(args.command, Action::HeadsetBridgeStatus) {
         anyhow::ensure!(!args.demo, "Headset bridge status requires live SteamVR");
         let vr = rig_companion::steamvr::SteamVr::connect()?;

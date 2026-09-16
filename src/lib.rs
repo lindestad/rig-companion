@@ -1,4 +1,6 @@
 pub mod calibration;
+pub mod eye_calibration;
+pub mod eyes;
 pub mod profile;
 pub mod service;
 pub mod startup;

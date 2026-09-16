@@ -47,6 +47,7 @@ pub enum Message {
     Step(f64),
     Undo,
     Dashboard,
+    GazeClick,
     Delay(bool),
     Shortcuts(bool),
     Cancel,
@@ -145,6 +146,7 @@ impl App {
                 self.dispatch(Command::Undo);
             }
             Message::Dashboard => self.dispatch(Command::Dashboard),
+            Message::GazeClick => self.dispatch(Command::GazeClick),
             Message::Delay(value) => self.countdown_enabled = value,
             Message::Cancel => self.pending = None,
             Message::Shortcuts(enabled) => {
@@ -446,6 +448,10 @@ impl App {
             button(text("Open dashboard").size(14))
                 .padding([12, 16])
                 .on_press_maybe((self.state.connected && free).then_some(Message::Dashboard))
+                .style(secondary),
+            button(text("VR gaze click · F14").size(14))
+                .padding([12, 16])
+                .on_press_maybe((self.state.connected && free).then_some(Message::GazeClick))
                 .style(secondary)
         ]
         .spacing(10)

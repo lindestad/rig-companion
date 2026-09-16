@@ -8,6 +8,17 @@ public static class RigShortcut {
  }
  [DllImport("shell32.dll",CharSet=CharSet.Unicode,PreserveSig=false)] static extern void SHGetPropertyStoreFromParsingName(string path,IntPtr context,uint flags,ref Guid iid,[MarshalAs(UnmanagedType.Interface)] out Store store);
  [DllImport("shell32.dll",CharSet=CharSet.Unicode)] static extern void SHChangeNotify(uint ev,uint flags,string path,IntPtr unused);
+ [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+ static extern uint GetFinalPathNameByHandle(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Text.StringBuilder path, uint capacity, uint flags);
+ public static string PhysicalPath(string path) {
+  using(var file=System.IO.File.OpenRead(path)) {
+   var resolved=new System.Text.StringBuilder(32768);
+   uint count=GetFinalPathNameByHandle(file.SafeFileHandle,resolved,(uint)resolved.Capacity,0);
+   if(count==0 || count>=resolved.Capacity) throw new System.ComponentModel.Win32Exception();
+   string result=resolved.ToString();
+   return result.StartsWith(@"\\?\") ? result.Substring(4) : result;
+  }
+ }
  public static void Register(string path) {
   var iid=new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"); Store store;
   SHGetPropertyStoreFromParsingName(path,IntPtr.Zero,2,ref iid,out store);

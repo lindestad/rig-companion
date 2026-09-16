@@ -29,4 +29,4 @@ Run relevant tests and checks before committing. Keep release output out of git.
 ## Known failures requiring real verification
 
 - As of 2026-09-16, the user confirms F16 camera passthrough does not display. SteamVR logs receiving the toggle command, but the visual outcome is broken. Do not describe passthrough as working until verified in the headset.
-- The user confirms the Start menu entry is missing. The `.lnk` exists and launches, but `Get-StartApps` does not list it. Do not describe this as fixed merely because installation refreshed the shortcut.
+- Start menu discovery was fixed on 2026-09-16. Packaged-host filesystem virtualization had redirected the shortcut to a private LocalCache/Roaming directory. Always verify the shortcut's physical path and its RigCompanion.Desktop entry in Get-StartApps. For a first install from a packaged host, use Explorer to copy the staged shortcut into the real Programs folder; do not treat a virtualized shortcut as installed.

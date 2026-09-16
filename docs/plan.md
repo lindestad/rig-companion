@@ -1,5 +1,11 @@
 # Implementation plan
 
+## Implementation status — 14 September 2026
+
+The user requested the iced interface immediately, so the CLI-first sequence below was combined into one first implementation. A single Cargo package now contains the pure calibration/profile modules, OpenVR adapter, owning worker, iced app and `rigctl` CLI. New profiles default to the user's 98 cm seated height.
+
+Implemented: height/full-reference save and restore, nudges, undo, demo backend, JSON CLI, countdown, optional global hotkeys, single-instance lock and dashboard request. Desktop demo checks pass. Live headset verification remains pending. The first shell is a regular iced application: minimize to retain hotkeys; close to quit. A tray daemon, direct desktop selection and USB integration are still pending. See [testing notes](testing.md) for current semantics and limitations.
+
 ## Product behaviour
 
 Restore a known seated reference in SteamVR after Pimax starts with the wrong origin or floor height. The user sits in the same rig position and explicitly presses restore. Save the desired reference, calculate a fresh correction per restore, then allow natural head motion. Do not continuously pin the head in place.

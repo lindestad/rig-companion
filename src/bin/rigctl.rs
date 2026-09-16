@@ -1,0 +1,119 @@
+use clap::{Parser, Subcommand};
+use rig_companion::{
+    profile,
+    service::{Command, Engine},
+};
+use std::{path::PathBuf, time::Duration};
+
+#[derive(Parser)]
+#[command(
+    version,
+    about = "Rig Companion calibration CLI (close the GUI before live use)"
+)]
+struct Args {
+    #[arg(long, global = true)]
+    demo: bool,
+    #[arg(long, global = true)]
+    profile: Option<PathBuf>,
+    #[command(subcommand)]
+    command: Action,
+}
+
+#[derive(Subcommand)]
+enum Action {
+    /// Inspect current tracking without modifying it. Output is JSON.
+    Status,
+    /// Store a desired seated height in centimetres; does not modify SteamVR.
+    SetHeight {
+        cm: f64,
+    },
+    /// Restore the saved height in SteamVR.
+    Restore,
+    /// Capture the current correct height, position and forward direction.
+    Capture,
+    /// Restore a previously captured position and heading.
+    RestoreFull,
+    /// Raise/lower viewpoint by signed centimetres (maximum 10).
+    Nudge {
+        #[arg(allow_hyphen_values = true)]
+        cm: f64,
+    },
+    Dashboard,
+    /// Exercise save, restore, nudge and undo using a temporary simulated profile.
+    DemoCheck,
+}
+
+fn main() {
+    if let Err(error) = run() {
+        eprintln!(
+            "{}",
+            serde_json::json!({"ok": false, "error": format!("{error:#}")})
+        );
+        std::process::exit(1);
+    }
+}
+
+fn run() -> anyhow::Result<()> {
+    let args = Args::parse();
+    if matches!(args.command, Action::DemoCheck) {
+        let temp = tempfile::tempdir()?;
+        let mut engine = Engine::new(temp.path().join("profile.json"), true)?;
+        for command in [
+            Command::Connect,
+            Command::SaveHeight(1.15),
+            Command::RestoreHeight,
+            Command::Nudge(0.01),
+            Command::Undo,
+        ] {
+            engine.run(command)?;
+        }
+        anyhow::ensure!(
+            (engine.state.pose.unwrap().position[1] - 1.15).abs() < 1e-8,
+            "Unexpected final height"
+        );
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({"ok":true,"state":engine.state}))?
+        );
+        return Ok(());
+    }
+    let _lock = rig_companion::lock_instance(args.demo)?;
+    let mut engine = Engine::new(
+        args.profile
+            .unwrap_or_else(|| profile::default_path(args.demo)),
+        args.demo,
+    )?;
+    if let Action::SetHeight { cm } = args.command {
+        engine.run(Command::SaveHeight(cm / 100.0))?;
+    } else {
+        engine.run(Command::Connect)?;
+        if !matches!(args.command, Action::Status | Action::Dashboard) && !args.demo {
+            std::thread::sleep(Duration::from_millis(3200));
+            engine.refresh();
+        }
+        match args.command {
+            Action::Status => {}
+            Action::Restore => {
+                engine.run(Command::RestoreHeight)?;
+            }
+            Action::Capture => {
+                engine.run(Command::Capture)?;
+            }
+            Action::RestoreFull => {
+                engine.run(Command::RestoreReference)?;
+            }
+            Action::Nudge { cm } => {
+                engine.run(Command::Nudge(cm / 100.0))?;
+            }
+            Action::Dashboard => {
+                engine.run(Command::Dashboard)?;
+            }
+            _ => unreachable!(),
+        }
+    }
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::json!({"ok":true,"state":engine.state}))?
+    );
+    Ok(())
+}

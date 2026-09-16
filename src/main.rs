@@ -11,6 +11,9 @@ struct Args {
     /// Simulate a headset without accessing SteamVR. Uses a separate profile.
     #[arg(long)]
     demo: bool,
+    /// Connect to an existing VR session without launching Pimax or SteamVR.
+    #[arg(long)]
+    no_launch: bool,
     /// Override the profile location.
     #[arg(long)]
     profile: Option<PathBuf>,
@@ -34,11 +37,20 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
     let args = Args::parse();
-    let lock = rig_companion::lock_instance(args.demo)?;
-    let worker = rig_companion::service::Worker::spawn(
+    let lock = match rig_companion::lock_instance(args.demo) {
+        Ok(lock) => lock,
+        Err(error) => {
+            if !args.demo && focus_existing() {
+                return Ok(());
+            }
+            return Err(error);
+        }
+    };
+    let worker = rig_companion::service::Worker::spawn_with_launch(
         args.profile
             .unwrap_or_else(|| rig_companion::profile::default_path(args.demo)),
         args.demo,
+        !args.no_launch,
     )?;
     let app = std::cell::RefCell::new(Some(ui::App::new(worker, lock)));
     iced::application(
@@ -58,4 +70,20 @@ fn run() -> anyhow::Result<()> {
     .default_font(iced::Font::with_name("Segoe UI"))
     .run()?;
     Ok(())
+}
+
+fn focus_existing() -> bool {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        FindWindowW, SW_RESTORE, SetForegroundWindow, ShowWindow,
+    };
+    let title: Vec<u16> = "Rig Companion\0".encode_utf16().collect();
+    unsafe {
+        let window = FindWindowW(std::ptr::null(), title.as_ptr());
+        if window.is_null() {
+            return false;
+        }
+        ShowWindow(window, SW_RESTORE);
+        SetForegroundWindow(window);
+    }
+    true
 }

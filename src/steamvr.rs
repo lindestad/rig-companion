@@ -219,6 +219,16 @@ impl SteamVr {
     }
 
     pub fn dashboard(&self) -> Result<String> {
+        if self.dashboard_visible()? {
+            crate::startup::toggle_dashboard_closed()?;
+            for _ in 0..20 {
+                thread::sleep(Duration::from_millis(50));
+                if !self.dashboard_visible()? {
+                    return Ok("Dashboard closed.".into());
+                }
+            }
+            bail!("Dashboard close was requested, but SteamVR still reports it visible");
+        }
         unsafe {
             let overlay = &*table::<vr::VR_IVROverlay_FnTable>(c"FnTable:IVROverlay_028")?;
             let show = overlay.ShowDashboard.context("Missing dashboard API")?;
@@ -243,7 +253,7 @@ impl SteamVr {
             }
         }
         Ok(
-            "Dashboard opened; no desktop panel was available yet. Press F15 again after it loads."
+            "Dashboard opened; desktop is still loading. Toggle closed and reopen to select it."
                 .into(),
         )
     }

@@ -378,6 +378,7 @@ impl Engine {
 }
 
 pub struct Worker {
+    cancelled: Arc<std::sync::atomic::AtomicBool>,
     sender: Option<mpsc::Sender<Command>>,
     snapshot: Arc<Mutex<Snapshot>>,
     join: Option<thread::JoinHandle<()>>,
@@ -385,11 +386,17 @@ pub struct Worker {
 
 impl Worker {
     pub fn spawn(path: PathBuf, demo: bool) -> Result<Self> {
+        Self::spawn_with_launch(path, demo, false)
+    }
+
+    pub fn spawn_with_launch(path: PathBuf, demo: bool, launch: bool) -> Result<Self> {
         // Only load a profile here; the OpenVR context is created on the worker thread.
         let initial = Engine::new(path.clone(), demo)?.state;
         let snapshot = Arc::new(Mutex::new(initial.clone()));
         let shared = snapshot.clone();
         let (sender, receiver) = mpsc::channel();
+        let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let thread_cancelled = cancelled.clone();
         let join = thread::Builder::new()
             .name("steamvr".into())
             .spawn(move || {
@@ -399,18 +406,35 @@ impl Worker {
                     path,
                     state: initial,
                 };
-                let _ = engine.run(Command::Connect);
+                let mut auto_connect = true;
+                if launch
+                    && !demo
+                    && let Err(error) = crate::startup::run(&thread_cancelled, |message| {
+                        engine.state.message = message.into();
+                        *shared.lock().unwrap() = engine.state.clone();
+                    })
+                {
+                    engine.result(Err(error));
+                    auto_connect = false;
+                }
+                if auto_connect && !thread_cancelled.load(std::sync::atomic::Ordering::Relaxed) {
+                    let _ = engine.run(Command::Connect);
+                }
                 let mut last_connect_attempt = std::time::Instant::now();
                 loop {
                     *shared.lock().unwrap() = engine.state.clone();
                     match receiver.recv_timeout(Duration::from_millis(250)) {
                         Ok(command) => {
+                            if matches!(command, Command::Connect) {
+                                auto_connect = true;
+                            }
                             shared.lock().unwrap().busy = true;
                             let _ = engine.run(command);
                         }
                         Err(mpsc::RecvTimeoutError::Timeout) => {
                             engine.refresh();
-                            if !engine.state.connected
+                            if auto_connect
+                                && !engine.state.connected
                                 && last_connect_attempt.elapsed() >= Duration::from_secs(2)
                             {
                                 // Background initialization never launches SteamVR itself.
@@ -423,6 +447,7 @@ impl Worker {
                 }
             })?;
         Ok(Self {
+            cancelled,
             sender: Some(sender),
             snapshot,
             join: Some(join),
@@ -440,6 +465,8 @@ impl Worker {
 
 impl Drop for Worker {
     fn drop(&mut self) {
+        self.cancelled
+            .store(true, std::sync::atomic::Ordering::Relaxed);
         self.sender.take();
         if let Some(join) = self.join.take() {
             let _ = join.join();

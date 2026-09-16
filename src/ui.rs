@@ -450,7 +450,7 @@ impl App {
             .padding([12, 16])
             .on_press_maybe(free.then_some(Message::Connect))
             .style(secondary),
-            button(text("Desktop · F15").size(14))
+            button(text("Dashboard · F15").size(14))
                 .padding([12, 16])
                 .on_press_maybe((self.state.connected && free).then_some(Message::Dashboard))
                 .style(secondary),

@@ -1,6 +1,7 @@
 pub mod calibration;
 pub mod profile;
 pub mod service;
+pub mod startup;
 pub mod steamvr;
 
 pub fn lock_instance(demo: bool) -> anyhow::Result<std::fs::File> {

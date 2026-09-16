@@ -26,7 +26,7 @@ September 16: 13 unit tests pass, including F13 default-origin restoration, save
 - Live read-only CLI with SteamVR stopped: correctly returns OpenVR background-app error 121 without starting SteamVR or applying any correction.
 - Formatting and Clippy with warnings treated as errors.
 
-## Not yet verified
+## Historical validation notes (superseded where noted below)
 
 - Live SteamVR commits/read-back with the Dream Air, behaviour across standby/restart and iRacing transitions, dashboard opening, and controller alignment.
 - No performance claim has been established for use during racing. The UI uses iced's wgpu renderer and snapshots at 4 Hz; profile/command work and OpenVR calls run on an owning worker thread.
@@ -40,6 +40,14 @@ This build commits the standing-to-raw origin through ChaperoneSetup. It refresh
 
 The seated origin is deliberately not overwritten by the standing correction. A game with its own seated recenter may behave differently from the lobby; test those transitions before expanding the correction policy. The box's Windows mouse and keyboard firmware remains a separate future component.
 
-No dedicated “view desktop” command is claimed yet. Open dashboard is implemented through the OpenVR overlay API; navigating its desktop panel remains runtime behaviour to validate. Closing the app currently quits it; minimizing keeps hotkeys active. Automatic reconnect now retries every two seconds; tray support and Windows autostart remain unimplemented.
+F15 now opens the desktop through the OpenVR overlay API and closes a visible dashboard through SteamVR's compositor command. Closing the app quits it; minimizing keeps hotkeys active. Automatic reconnect retries every two seconds; tray support and Windows autostart remain unimplemented.
+
+## September 16 launcher and toggle verification
+
+- The user confirmed F13 correction, native HMD gaze clicks and desktop opening. The earlier gamepad experiment below is superseded by the native bridge.
+- Formatting, Clippy with warnings denied, and all 15 tests passed; release build succeeded.
+- With Pimax running and SteamVR stopped, opening the companion started SteamVR and connected automatically. The native driver capability query returned supported.
+- F15 closed the dashboard (visibility read-back confirmed) and reopened `system.desktop.1`. The Start menu shortcut target was verified.
+- Pimax cold startup was not exercised; existing Pimax processes were reused. Driver registration was already present, so automatic registration remains untested live.
 
 The F13 delay is now 500 ms, followed by the existing 320 ms stability sampling. UI timer resolution is 50 ms; other GUI capture/height commands retain their three-second countdown. The physical XInput probe confirmed virtual trigger 0 → 255 → 0 with SteamVR stopped. See [gaze-click research](gaze-click-research.md) for documented HMD and gamepad routes and the still-unresolved dashboard selection failure.

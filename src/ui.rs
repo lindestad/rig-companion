@@ -12,15 +12,15 @@ use rig_companion::{
 };
 use std::time::{Duration, Instant};
 
-const BG: Color = Color::from_rgb8(13, 18, 24);
-const PANEL: Color = Color::from_rgb8(22, 30, 39);
-const INNER: Color = Color::from_rgb8(16, 23, 31);
-const LINE: Color = Color::from_rgb8(43, 57, 70);
-const WHITE: Color = Color::from_rgb8(235, 242, 247);
-const MUTED: Color = Color::from_rgb8(150, 170, 185);
-const ACCENT: Color = Color::from_rgb8(126, 237, 191);
-const AMBER: Color = Color::from_rgb8(246, 191, 105);
-const RED: Color = Color::from_rgb8(255, 145, 142);
+const BG: Color = Color::from_rgb8(14, 14, 16);
+const PANEL: Color = Color::from_rgb8(25, 25, 28);
+const INNER: Color = Color::from_rgb8(17, 17, 19);
+const LINE: Color = Color::from_rgb8(53, 53, 58);
+const WHITE: Color = Color::from_rgb8(238, 238, 240);
+const MUTED: Color = Color::from_rgb8(164, 164, 173);
+const ACCENT: Color = Color::from_rgb8(188, 168, 255);
+const AMBER: Color = Color::from_rgb8(255, 167, 97);
+const RED: Color = AMBER;
 
 pub struct App {
     worker: Worker,
@@ -32,6 +32,13 @@ pub struct App {
     hotkeys: Option<Hotkeys>,
     local_message: Option<String>,
     eye_page: bool,
+    settings_page: bool,
+    settings: crate::settings_ui::State,
+    quitting: bool,
+    quit_queued: bool,
+    quit_error: Option<String>,
+    logo: widget::image::Handle,
+    quit_signal: Option<rig_companion::ipc::QuitSignal>,
     focused: bool,
     keep_eyes_live: bool,
     eye_pending: bool,
@@ -44,7 +51,12 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Quit,
+    QuitDone(Result<(), String>),
+    Passthrough,
     EyePage(bool),
+    SettingsPage,
+    DriverSettings(crate::settings_ui::Message),
     Focused(bool),
     KeepEyesLive(bool),
     EyeTick,
@@ -81,6 +93,7 @@ impl App {
             Err(e) => (None, Some(e.to_string())),
         };
         Self {
+            quit_signal: rig_companion::ipc::QuitSignal::create(state.demo).ok(),
             worker,
             state,
             height,
@@ -90,6 +103,12 @@ impl App {
             hotkeys,
             local_message,
             eye_page: false,
+            settings_page: false,
+            settings: crate::settings_ui::State::default(),
+            quitting: false,
+            quit_queued: false,
+            quit_error: None,
+            logo: widget::image::Handle::from_rgba(64,64,include_bytes!("../assets/icon.rgba").as_slice()),
             focused: true,
             keep_eyes_live: false,
             eye_pending: false,
@@ -103,6 +122,56 @@ impl App {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::Quit => {
+                if self.settings.busy() {
+                    self.quit_queued = true;
+                    self.quit_error = Some("Finishing settings operation before quitting…".into());
+                    return Task::none();
+                }
+                self.quit_queued = false;
+                if !self.quitting {
+                    self.quitting = true;
+                    self.quit_error = None;
+                    self.pending = None;
+                    self.hotkeys = None;
+                    self.worker.begin_shutdown();
+                    if self.state.demo {
+                        return iced::exit();
+                    }
+                    return Task::perform(
+                        async {
+                            tokio::task::spawn_blocking(rig_companion::startup::quit_steamvr)
+                                .await
+                                .map_err(|e| e.to_string())?
+                                .map_err(|e| format!("{e:#}"))
+                        },
+                        Message::QuitDone,
+                    );
+                }
+            }
+            Message::QuitDone(result) => match result {
+                Ok(()) => return iced::exit(),
+                Err(e) => {
+                    self.quitting = false;
+                    self.quit_error = Some(e);
+                }
+            },
+            Message::SettingsPage => {
+                self.eye_page = false;
+                self.settings_page = true;
+                if !self.settings.loaded() {
+                    return self
+                        .settings
+                        .update(crate::settings_ui::Message::Load, self.state.demo)
+                        .map(Message::DriverSettings);
+                }
+            }
+            Message::DriverSettings(message) => {
+                return self
+                    .settings
+                    .update(message, self.state.demo)
+                    .map(Message::DriverSettings);
+            }
             Message::CheckEyeCalibration => {
                 if !self.calibration_check_pending && !self.state.demo {
                     self.calibration_check_pending = true;
@@ -127,6 +196,7 @@ impl App {
                 self.calibration_status = status;
             }
             Message::EyePage(value) => {
+                self.settings_page = false;
                 self.eye_page = value;
                 self.eye_reading = None;
             }
@@ -138,7 +208,7 @@ impl App {
             }
             Message::KeepEyesLive(value) => self.keep_eyes_live = value,
             Message::EyeTick => {
-                if self.eye_page
+                if !self.settings_page
                     && (self.focused || self.keep_eyes_live)
                     && !self.eye_pending
                     && !self.state.demo
@@ -157,7 +227,7 @@ impl App {
             }
             Message::EyeRead(result) => {
                 self.eye_pending = false;
-                if self.eye_page && (self.focused || self.keep_eyes_live) {
+                if !self.settings_page && (self.focused || self.keep_eyes_live) {
                     match result {
                         Ok(reading) => {
                             self.eye_reading = Some(reading);
@@ -171,6 +241,12 @@ impl App {
                 }
             }
             Message::Tick => {
+                if !self.quitting
+                    && ((self.quit_queued && !self.settings.busy())
+                        || self.quit_signal.as_ref().is_some_and(|s| s.requested()))
+                {
+                    return self.update(Message::Quit);
+                }
                 let fresh = self.worker.snapshot();
                 if fresh.revision != self.state.revision {
                     self.local_message = None;
@@ -205,6 +281,7 @@ impl App {
                         4 => self.schedule(Command::Recenter98),
                         5 => self.dispatch(Command::GazeClick),
                         6 => self.dispatch(Command::Dashboard),
+                        7 => self.dispatch(Command::Passthrough),
                         _ => {}
                     }
                 }
@@ -237,6 +314,11 @@ impl App {
                 self.dispatch(Command::Undo);
             }
             Message::Dashboard => self.dispatch(Command::Dashboard),
+            Message::Passthrough => {
+                self.settings_page = false;
+                self.eye_page = false;
+                self.dispatch(Command::Passthrough);
+            }
             Message::GazeClick => self.dispatch(Command::GazeClick),
             Message::Delay(value) => self.countdown_enabled = value,
             Message::Cancel => self.pending = None,
@@ -255,7 +337,7 @@ impl App {
     }
 
     fn dispatch(&mut self, command: Command) {
-        if self.state.busy {
+        if self.state.busy || self.quitting || self.quit_queued {
             return;
         }
         self.local_message = None;
@@ -288,6 +370,7 @@ impl App {
         let mut subscriptions = vec![
             iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick),
             iced::event::listen_with(|event, _, _| match event {
+                iced::Event::Window(iced::window::Event::CloseRequested) => Some(Message::Quit),
                 iced::Event::Window(iced::window::Event::Focused) => Some(Message::Focused(true)),
                 iced::Event::Window(iced::window::Event::Unfocused) => {
                     Some(Message::Focused(false))
@@ -295,7 +378,7 @@ impl App {
                 _ => None,
             }),
         ];
-        if self.eye_page && (self.focused || self.keep_eyes_live) {
+        if !self.settings_page && (self.focused || self.keep_eyes_live) {
             subscriptions
                 .push(iced::time::every(Duration::from_millis(250)).map(|_| Message::EyeTick));
         }
@@ -317,6 +400,19 @@ impl App {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
+        if self.settings_page {
+            return container(
+                column![
+                    self.navigation(),
+                    self.settings.view().map(Message::DriverSettings)
+                ]
+                .spacing(20),
+            )
+            .padding(24)
+            .height(Fill)
+            .width(Fill)
+            .into();
+        }
         if self.eye_page {
             return self.eye_view();
         }
@@ -339,14 +435,8 @@ impl App {
             "STEAMVR OFFLINE"
         };
         let header = row![
-            container(text("R / C").size(19).font(bold()).color(ACCENT))
-                .padding([14, 16])
-                .style(|_| box_style(INNER)),
-            column![
-                text("RIG COMPANION").size(22).font(bold()),
-                text("Your seat. Your reference.").size(14).color(MUTED)
-            ]
-            .spacing(4),
+            widget::image(self.logo.clone()).width(42).height(42),
+            text("Rig Companion").size(24).font(bold()),
             Space::new().width(Fill),
             container(text(status_label).size(12).font(bold()).color(status_color))
                 .padding([10, 15])
@@ -354,19 +444,6 @@ impl App {
         ]
         .spacing(16)
         .align_y(alignment::Vertical::Center);
-
-        let intro = row![
-            column![
-                text("Back where you belong.").size(34).font(bold()),
-                text("Restore your seated position in SteamVR, with a single click.")
-                    .size(16)
-                    .color(MUTED)
-            ]
-            .spacing(8),
-            Space::new().width(Fill),
-            text("01 / CALIBRATION").size(12).color(MUTED)
-        ]
-        .align_y(alignment::Vertical::Bottom);
 
         let current = self
             .state
@@ -417,10 +494,10 @@ impl App {
             target: self.state.profile.height_m,
         })
         .width(Fill)
-        .height(106);
+        .height(64);
         let calibration = panel(
             column![
-                section("FLOOR CALIBRATION", "A familiar starting point"),
+                text("FLOOR CALIBRATION").size(12).color(MUTED),
                 metrics,
                 gauge,
                 row![
@@ -456,15 +533,13 @@ impl App {
             .width(Fill);
         let reference = panel(
             column![
-                section("YOUR REFERENCE", "Set once. Restore anytime."),
+                text("YOUR REFERENCE").size(12).color(MUTED),
                 text("Seated height (cm)").size(15).color(MUTED),
                 field,
                 action("Save height", Message::Save, free, false),
-                text(
-                    "Your eye height above the real floor. You can also adjust below, then capture."
-                )
-                .size(14)
-                .color(MUTED),
+                text("Eye height above the real floor.")
+                    .size(14)
+                    .color(MUTED),
                 widget::rule::horizontal(1),
                 action("Capture current position", Message::Capture, ready, false),
                 action(
@@ -488,7 +563,7 @@ impl App {
         let controls = panel(
             column![
                 row![
-                    section("FINE ADJUSTMENT", "Small changes, right from your seat"),
+                    text("FINE ADJUSTMENT").size(12).color(MUTED),
                     Space::new().width(Fill),
                     step_button("5 mm", 0.005, self.step),
                     step_button("1 cm", 0.01, self.step),
@@ -574,7 +649,7 @@ impl App {
                 .label("Global shortcuts")
                 .on_toggle(Message::Shortcuts)
                 .size(17),
-            text("F13 recenter / F14 click / F15 desktop | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
+            text("F13 recenter / F14 click / F15 desktop / F16 camera | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
                 .size(12)
                 .color(MUTED),
             Space::new().width(Fill),
@@ -586,15 +661,9 @@ impl App {
             .align_y(alignment::Vertical::Center);
 
         let content = column![
-            row![
-                button("Seated reference").style(primary_style),
-                button("Eye tracking")
-                    .on_press(Message::EyePage(true))
-                    .style(secondary)
-            ]
-            .spacing(10),
+            self.navigation(),
             header,
-            intro,
+            self.compact_eyes(),
             container(text(notice).size(14).color(notice_color))
                 .padding([10, 14])
                 .width(Fill)
@@ -610,6 +679,100 @@ impl App {
             .height(Fill)
             .width(Fill)
             .into()
+    }
+
+    fn navigation(&self) -> Element<'_, Message> {
+        column![
+            row![
+                button("Seated reference")
+                    .on_press(Message::EyePage(false))
+                    .style(secondary),
+                button("Eye tracking")
+                    .on_press(Message::EyePage(true))
+                    .style(secondary),
+                button("Camera · F16")
+                    .on_press(Message::Passthrough)
+                    .style(secondary),
+                button("Driver settings")
+                    .on_press(Message::SettingsPage)
+                    .style(secondary),
+                Space::new().width(Fill),
+                button(if self.quitting {
+                    "Closing SteamVR…"
+                } else {
+                    "Quit + SteamVR"
+                })
+                .on_press_maybe((!self.quitting).then_some(Message::Quit))
+                .style(secondary),
+            ]
+            .spacing(10),
+            text(self.quit_error.as_deref().unwrap_or(""))
+                .size(12)
+                .color(AMBER)
+        ]
+        .spacing(2)
+        .into()
+    }
+
+    fn compact_eyes(&self) -> Element<'_, Message> {
+        let reading = self
+            .eye_reading
+            .as_ref()
+            .filter(|r| r.usable() && (self.focused || self.keep_eyes_live));
+        let status = if !self.focused && !self.keep_eyes_live {
+            "Paused"
+        } else if reading.is_some() {
+            "Valid gaze"
+        } else {
+            "No valid gaze"
+        };
+        container(
+            row![
+                column![
+                    text("Eye tracking").size(15).font(bold()),
+                    text(status).size(12).color(MUTED),
+                    button("Details")
+                        .on_press(Message::EyePage(true))
+                        .style(secondary)
+                ]
+                .spacing(5),
+                canvas(EyePlot {
+                    degrees: reading.map(|r| r.gaze.left.degrees()),
+                    color: WHITE
+                })
+                .width(100)
+                .height(88),
+                canvas(EyePlot {
+                    degrees: reading.map(|r| r.gaze.right.degrees()),
+                    color: ACCENT
+                })
+                .width(100)
+                .height(88),
+                text(
+                    reading
+                        .map(|r| {
+                            let l = r.gaze.left.degrees();
+                            let r = r.gaze.right.degrees();
+                            format!(
+                                "L  {:+.1}° / {:+.1}°\nR  {:+.1}° / {:+.1}°",
+                                l[0], l[1], r[0], r[1]
+                            )
+                        })
+                        .unwrap_or_else(|| "—".into())
+                )
+                .size(13)
+                .color(MUTED),
+                Space::new().width(Fill),
+                checkbox(self.keep_eyes_live)
+                    .label("Keep live in VR")
+                    .on_toggle(Message::KeepEyesLive)
+            ]
+            .spacing(16)
+            .align_y(alignment::Vertical::Center),
+        )
+        .padding([8, 14])
+        .style(|_| box_style(PANEL))
+        .into()
     }
 
     fn eye_view(&self) -> Element<'_, Message> {
@@ -660,10 +823,10 @@ impl App {
             .map(|r| format!("Telemetry written {:.2} s ago", r.age_ms as f64 / 1000.0))
             .unwrap_or_else(|| "No telemetry received".into());
         let content = column![
-            row![button("Seated reference").on_press(Message::EyePage(false)).style(secondary), button("Eye tracking").style(primary_style)].spacing(10),
+            self.navigation(),
             row![text("Eye tracking").size(36).font(bold()), Space::new().width(Fill), text(status).size(13).color(if usable { ACCENT } else { AMBER })].align_y(alignment::Vertical::Center),
-            text("See where your headset thinks you are looking.").size(18).color(MUTED),
-            row![eye("LEFT GAZE ESTIMATE", reading.map(|r| r.gaze.left), ACCENT), eye("RIGHT GAZE ESTIMATE", reading.map(|r| r.gaze.right), Color::from_rgb8(142, 190, 255))].spacing(18),
+            text("Live gaze estimates").size(18).color(MUTED),
+            row![eye("LEFT GAZE ESTIMATE", reading.map(|r| r.gaze.left), ACCENT), eye("RIGHT GAZE ESTIMATE", reading.map(|r| r.gaze.right), AMBER)].spacing(18),
             panel(column![
                 row![text(if paused { "Preview paused while unfocused".into() } else { age }).size(15), Space::new().width(Fill), checkbox(self.keep_eyes_live).label("Keep live in VR").on_toggle(Message::KeepEyesLive)].spacing(16),
                 text(self.eye_error.as_deref().unwrap_or("4 updates/second from the custom driver. File freshness does not prove a new eye-camera sample; the driver can reuse cached data. These are gaze estimates, not eye images.")).size(14).color(MUTED),
@@ -674,7 +837,7 @@ impl App {
                 button(if self.calibration_check_pending { "Checking tracker…" } else { "Check calibration availability" })
                     .on_press_maybe((!self.calibration_check_pending && !self.state.demo).then_some(Message::CheckEyeCalibration)).style(secondary).padding(12),
             ].spacing(12)),
-            text("F13 recenter · F14 gaze click · F15 dashboard toggle stay active on this page.").size(14).color(MUTED),
+            text("F13 recenter · F14 gaze click · F15 dashboard · F16 camera stay active on this page.").size(14).color(MUTED),
         ].spacing(20).max_width(1120);
         container(scrollable(container(content).padding(24).center_x(Fill)))
             .height(Fill)
@@ -814,9 +977,9 @@ fn primary_style(_: &Theme, status: button::Status) -> button::Style {
             if disabled {
                 LINE
             } else if matches!(status, button::Status::Hovered) {
-                Color::from_rgb8(164, 255, 217)
+                Color::from_rgb8(210, 200, 238)
             } else {
-                ACCENT
+                WHITE
             }
             .into(),
         ),
@@ -837,7 +1000,7 @@ fn secondary(_: &Theme, status: button::Status) -> button::Style {
             .into(),
         ),
         text_color: if disabled {
-            Color::from_rgb8(91, 109, 123)
+            Color::from_rgb8(100, 100, 108)
         } else {
             WHITE
         },

@@ -16,20 +16,23 @@ Or launch `target/release/rig-companion.exe` after `cargo build --release`. The 
 
 Use `cargo run --bin rig-companion -- --demo` to exercise the interface without touching SteamVR. Demo profiles are separate from live profiles.
 
-Keep the window open or minimized. Closing it quits the app and releases the hotkeys. **Global shortcuts** are enabled at launch, unless registration fails:
+Keep the window open or minimized. The Quit button, window close button and Alt+F4 cleanly shut down SteamVR and the companion, while leaving Pimax EVO running. **Global shortcuts** are enabled at launch, unless registration fails:
 
 - **F13:** restore 98 cm plus saved horizontal position and heading. Without a captured reference, use the SteamVR origin and forward direction. Waits **0.5 seconds**, then checks tracking stability and applies the correction; sit normally and look forward. The GUI height/capture countdown remains three seconds. Disabling countdown removes the delay for both.
 - **F14:** click the SteamVR dashboard gaze pointer through the modified sboys3 HMD driver. The dashboard must be visible. The driver supplies and releases a 120 ms native headset system-button pulse. No virtual Xbox controller is created.
 - **F15:** toggle the dashboard. When closed, open the first available desktop panel (or the dashboard if desktop is still loading). When visible, close it. The GUI **Dashboard · F15** button uses the same action.
+- **F16:** toggle SteamVR camera Room View. The GUI **Camera · F16** button uses the same command. SteamVR Camera and Room View must be enabled, and the headset driver must expose a camera.
 - **Ctrl+Alt+F8:** saved height only; **Ctrl+Alt+F9:** undo/cancel countdown; **Ctrl+Alt+F7:** toggle dashboard.
 
 F13 always uses 98 cm, without overwriting the saved profile. Disable Global shortcuts to release the bindings. The F14 bridge is intended for the dashboard, not for clicking scene objects in SteamVR Home or games. Holding F14 does not repeat or drag. `rigctl headset-bridge-status` checks the active driver's capability without clicking. See [driver installation and rollback](docs/driver-installation.md).
 
 **Capture current position** records a full reference only when the floor is already correct. Height nudges do not overwrite the saved reference. Undo covers the last correction in the current connection; a detected external origin change invalidates it.
 
+The **Driver settings** page reads the installed sboys defaults and overrides. It defaults to global/Dream Air settings, with search, sliders, embedded number steppers, dropdowns and hover help taken from the sboys controls. Changes remain drafts until **Apply changes**. See [driver controls and camera](docs/driver-controls.md).
+
 ## CLI and development
 
-The **Eye tracking** page displays the custom driver's left/right gaze estimates at four updates per second, with validity and stale-data indicators. Enable **Keep live in VR** to keep the preview updating when Windows focus moves elsewhere. The calibration availability check is read-only; native eye calibration is still experimental and has not been implemented. See [eye-tracking findings](docs/eye-tracking-research.md).
+The main view includes a compact gaze preview. The **Eye tracking** page displays the custom driver's left/right gaze estimates at four updates per second, with validity and stale-data indicators. Enable **Keep live in VR** to keep the preview updating when Windows focus moves elsewhere. The calibration availability check is read-only; native eye calibration is still experimental and has not been implemented. See [eye-tracking findings](docs/eye-tracking-research.md).
 
 `rigctl eye-status` and `rigctl eye-calibration-status` work alongside the GUI. Build with `cargo build --release --bins` to include the isolated vendor discovery helper.
 
@@ -41,7 +44,7 @@ cargo run --bin rigctl -- nudge -1
 cargo run --bin rigctl -- demo-check
 ```
 
-CLI results are JSON; errors use stderr and a nonzero exit status. Close the GUI before live CLI operations: the app and CLI share an instance lock. `demo-check` uses temporary storage and runs without SteamVR. The CLI does not yet control an already running GUI process.
+CLI results are JSON; errors use stderr and a nonzero exit status. Close the GUI before live CLI operations: the app and CLI share an instance lock. `demo-check` uses temporary storage and runs without SteamVR. `rigctl quit` signals the running GUI to use its normal shutdown path, without taking the instance lock. Its JSON result acknowledges the request; wait for the app to exit before replacing installed binaries. Forced termination cannot run cleanup.
 
 Rust 1.98.1 is pinned. The OpenVR dependency also needs Visual Studio C++ Build Tools, a Windows SDK, CMake and libclang. The existing installation on this PC successfully built it. `just check` runs formatting, Clippy and tests; `just demo` starts the simulated interface.
 

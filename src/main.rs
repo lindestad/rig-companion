@@ -1,5 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 mod hotkeys;
+mod settings_ui;
 mod ui;
 
 use clap::Parser;
@@ -36,6 +37,10 @@ fn main() {
 }
 
 fn run() -> anyhow::Result<()> {
+    let app_id: Vec<u16> = "RigCompanion.Desktop\0".encode_utf16().collect();
+    unsafe {
+        windows_sys::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID(app_id.as_ptr());
+    }
     let args = Args::parse();
     let lock = match rig_companion::lock_instance(args.demo) {
         Ok(lock) => lock,
@@ -62,6 +67,9 @@ fn run() -> anyhow::Result<()> {
     .theme(ui::App::theme)
     .subscription(ui::App::subscription)
     .window(iced::window::Settings {
+        exit_on_close_request: false,
+        icon: iced::window::icon::from_rgba(include_bytes!("../assets/icon.rgba").to_vec(), 64, 64)
+            .ok(),
         size: iced::Size::new(1120.0, 980.0),
         min_size: Some(iced::Size::new(900.0, 650.0)),
         position: iced::window::Position::Centered,

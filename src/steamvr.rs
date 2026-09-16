@@ -258,6 +258,32 @@ impl SteamVr {
         )
     }
 
+    pub fn passthrough(&self) -> Result<String> {
+        unsafe {
+            let settings = &*table::<vr::VR_IVRSettings_FnTable>(c"FnTable:IVRSettings_003")?;
+            let mut error = 0;
+            let enabled = settings.GetBool.context("Missing settings API")?(
+                c"camera".as_ptr().cast_mut(),
+                c"enableCamera".as_ptr().cast_mut(),
+                &mut error,
+            );
+            ensure!(
+                error == 0 && enabled,
+                "Enable Camera in SteamVR Settings > Camera, enable Room View, then restart SteamVR if requested."
+            );
+            let camera =
+                &*table::<vr::VR_IVRTrackedCamera_FnTable>(c"FnTable:IVRTrackedCamera_006")?;
+            let mut has_camera = false;
+            let code = camera.HasCamera.context("Missing camera API")?(0, &mut has_camera);
+            ensure!(
+                code == 0 && has_camera,
+                "No headset camera exposed to SteamVR. Enable Pimax passthrough in the Dream Air driver settings and restart SteamVR."
+            );
+        }
+        crate::startup::toggle_passthrough()?;
+        Ok("Camera passthrough toggle requested · F16 toggles back.".into())
+    }
+
     pub fn dashboard_visible(&self) -> Result<bool> {
         unsafe {
             let overlay = &*table::<vr::VR_IVROverlay_FnTable>(c"FnTable:IVROverlay_028")?;

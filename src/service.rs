@@ -17,6 +17,7 @@ use std::{
 
 #[derive(Debug, Clone)]
 pub enum Command {
+    Disconnect,
     Connect,
     SaveHeight(f64),
     Capture,
@@ -27,6 +28,7 @@ pub enum Command {
     Nudge(f64),
     Undo,
     Dashboard,
+    Passthrough,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -219,6 +221,18 @@ impl Engine {
 
     fn execute(&mut self, command: Command) -> Result<String> {
         match command {
+            Command::Passthrough => {
+                match self.backend.as_ref().context("Connect to SteamVR first")? {
+                    Backend::Live(vr) => vr.passthrough(),
+                    Backend::Demo { .. } => Ok("Camera toggle simulated.".into()),
+                }
+            }
+            Command::Disconnect => {
+                self.backend = None;
+                self.state.connected = false;
+                self.state.ready = false;
+                Ok("Disconnected.".into())
+            }
             Command::Connect => {
                 // End the old context before opening a replacement.
                 self.backend = None;
@@ -425,6 +439,9 @@ impl Worker {
                     *shared.lock().unwrap() = engine.state.clone();
                     match receiver.recv_timeout(Duration::from_millis(250)) {
                         Ok(command) => {
+                            if matches!(command, Command::Disconnect) {
+                                auto_connect = false;
+                            }
                             if matches!(command, Command::Connect) {
                                 auto_connect = true;
                             }
@@ -434,6 +451,7 @@ impl Worker {
                         Err(mpsc::RecvTimeoutError::Timeout) => {
                             engine.refresh();
                             if auto_connect
+                                && !thread_cancelled.load(std::sync::atomic::Ordering::Relaxed)
                                 && !engine.state.connected
                                 && last_connect_attempt.elapsed() >= Duration::from_secs(2)
                             {
@@ -455,6 +473,11 @@ impl Worker {
     }
     pub fn snapshot(&self) -> Snapshot {
         self.snapshot.lock().unwrap().clone()
+    }
+    pub fn begin_shutdown(&self) {
+        self.cancelled
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.send(Command::Disconnect);
     }
     pub fn send(&self, command: Command) {
         if let Some(sender) = &self.sender {

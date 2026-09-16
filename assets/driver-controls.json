@@ -1,0 +1,469 @@
+{
+  "headset/enable": {
+    "restart": "steamvrRestart",
+    "help": "Enable the Custom Headset driver for this headset. Restart SteamVR to apply."
+  },
+  "headset/distortionProfile": {
+    "help": "The distortion profile to use for the headset. See the distortion tab for more options."
+  },
+  "headset/hardwareIpd": {
+    "help": "Match the rendered IPD to the physical headset IPD for correct world scale. This is the distance between the virtual cameras in SteamVR applications."
+  },
+  "headset/ipd": {
+    "step": 0.5,
+    "min": 50.0,
+    "max": 80.0,
+    "help": "Match the rendered IPD to the physical headset IPD for correct world scale. This is the distance between the virtual cameras in SteamVR applications."
+  },
+  "headset/maxFovX": {
+    "help": "The maximum per eye FOV that will be displayed horizontally in the headset. The actual FOV can be lower if this FOV can't fit on the screen after distortion. This may sometimes require restarting the game to fully apply.",
+    "step": 1.0,
+    "min": 1.0,
+    "dynamic_fov": "x"
+  },
+  "headset/maxFovY": {
+    "help": "The maximum FOV that will be displayed vertically in the headset. The actual FOV can be lower if this FOV can't fit on the screen after distortion. This may sometimes require restarting the game to fully apply.",
+    "step": 1.0,
+    "min": 1.0,
+    "dynamic_fov": "y"
+  },
+  "headset/fovClamping": {
+    "help": "When FOV Clamping is enabled, the distortion profile FOV will clamp the image to fit entirely on the display. Disabling this allows lighting up more of the corners or providing more FOV in the desktop view for streaming, but will also cause a blue glow at the edge of the display. That is because the red channel is already touching the centers of each of the edges of the display and can not be expanded any more without cutting off."
+  },
+  "headset/fovZoom": {
+    "help": "Adjusts how zoomed the FOV is. Decreasing this will allow the FOV sliders to go higher, but will introduce fish-eye distortion. These zoom settings can be combined for different effects.",
+    "step": 0.005,
+    "min": 0.8,
+    "max": 1.1
+  },
+  "headset/flatFovZoom": {
+    "help": "Similar to FOV Zoom but keeps straight lines straight at the expense of more distortion when rotating your head. Decreasing this will allow the FOV sliders to go higher, but will introduce distortion. These zoom settings can be combined for different effects.",
+    "step": 0.005,
+    "min": 0.7,
+    "max": 1.15
+  },
+  "headset/parallelProjection": {
+    "help": "Enabling parallel projection makes the virtual cameras always point in the same direction. It increases compatibility but slightly harms performance. This only applies when rendered binocular overlap is not 100%."
+  },
+  "headset/stationaryDimming/enable": {
+    "help": "Enables or disables the stationary dimming feature."
+  },
+  "headset/stationaryDimming/movementThreshold": {
+    "help": "The minimum amount of rotation in degrees that will reset the stationary dimming timer.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 10.0
+  },
+  "headset/stationaryDimming/movementTime": {
+    "help": "The amount of time in seconds that the display will remain bright after movement.",
+    "step": 0.5,
+    "min": 1.0,
+    "max": 30.0
+  },
+  "headset/stationaryDimming/dimBrightnessPercent": {
+    "help": "The minimum brightness percentage that the display will dim to when stationary.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 50.0
+  },
+  "headset/stationaryDimming/dimSeconds": {
+    "help": "The amount of time it takes to go from bright to dim.",
+    "step": 0.5,
+    "min": 1.0,
+    "max": 60.0
+  },
+  "headset/stationaryDimming/brightenSeconds": {
+    "help": "The amount of time it takes to go from dim to bright.",
+    "step": 0.5,
+    "min": 1.0,
+    "max": 60.0
+  },
+  "headset/hiddenArea/enable": {
+    "help": "Enables or disables the hidden area meshes.",
+    "restart": "gameRestart"
+  },
+  "headset/hiddenArea/testMode": {
+    "help": "Inverts the meshes to only show the areas that will be hidden.",
+    "restart": "gameRestart"
+  },
+  "headset/hiddenArea/radiusTopInner": {
+    "help": "The radius of the visible area at the top of the hidden area mesh near your nose.",
+    "restart": "gameRestart",
+    "step": 0.05,
+    "min": 0.0,
+    "max": 0.5
+  },
+  "headset/hiddenArea/radiusBottomInner": {
+    "help": "The radius of the visible area at the bottom of the hidden area mesh near your nose.",
+    "restart": "gameRestart",
+    "step": 0.05,
+    "min": 0.0,
+    "max": 0.5
+  },
+  "headset/hiddenArea/radiusTopOuter": {
+    "help": "The radius of the visible area at the top of the hidden area mesh near your ears.",
+    "restart": "gameRestart",
+    "step": 0.05,
+    "min": 0.0,
+    "max": 0.5
+  },
+  "headset/hiddenArea/radiusBottomOuter": {
+    "help": "The radius of the visible area at the bottom of the hidden area mesh near your ears.",
+    "restart": "gameRestart",
+    "step": 0.05,
+    "min": 0.0,
+    "max": 0.5
+  },
+  "headset/hiddenArea/detailLevel": {
+    "help": "The number of vertices used to create each section of the hidden area mesh. Higher values increase the smoothness of the mesh.",
+    "restart": "gameRestart",
+    "step": 1.0,
+    "min": 1.0,
+    "max": 32.0
+  },
+  "headset/enableEyeTracking": {
+    "help": "Enables eye tracking support for the headset. Pimax headsets require the pi_server runtime. Use mbucchia/Quad-Views-Foveated for foveated rendering. This may require restarting the game if turned on after a game is started.",
+    "restart": "gameRestart"
+  },
+  "headset/distortionZoom": {
+    "help": "Adjusts how zoomed in the distortion profile is. This can be used to correct for diopters with higher set diopters needing a positive zoom. However it will induce some amount of warping.",
+    "step": 0.002,
+    "min": 0.9,
+    "max": 1.1
+  },
+  "headset/blackLevel": {
+    "help": "The minimum brightness level that the display will reach. Increase this if you love the smeary grey of LCD headsets.",
+    "step": 0.001,
+    "min": 0.0,
+    "max": 1.0
+  },
+  "headset/ipdOffset": {
+    "help": "This value is added to the IPD value. Just use the main ipd slider and leave this 0. This will probably be removed soon.",
+    "step": 0.5,
+    "min": -20.0,
+    "max": 20.0
+  },
+  "headset/horizontalIPDOffset": {
+    "help": "Offsets both eyes to the right by the specified amount in millimeters. This can be used to accommodate hardware horizontal offsets.",
+    "step": 0.5,
+    "min": -10.0,
+    "max": 10.0
+  },
+  "headset/subpixelShift": {
+    "help": "Shifts the subpixels of the display using the UV distortions to improve color fringing and sharpness. The default is correct for the oled panel.",
+    "step": 0.01
+  },
+  "headset/distortionMeshResolution": {
+    "help": "The resolution of the distortion mesh. Higher values prevent small wavy artifacts in the corners of the lenses but makes other settings laggier. The default pretty much eliminates the artifacts.",
+    "step": 16.0
+  },
+  "headset/fovBurnInPrevention": {
+    "help": "Randomly adds up to 3 degrees to the FOV on every run to prevent sharp burn in at the edge of the fov on the display. It is recommended you do not turn this off in case you or the next person wants to increase the fov."
+  },
+  "headset/proximitySensorType": {
+    "help": "Controls where the data for proximity is retrieved from. Hardware is only available on some devices and has the same effect as none on devices that don't have proximity available. Pimax hardware devices may be unreliable, resulting in the screen shutting off or staying on regardless of proximity. None results in the standard SteamVR movement based proximity. In the stationary dimming mode, proximity is reported as false whenever the display has dimmed to its lowest level.",
+    "options": [
+      {
+        "value": "0",
+        "label": "None"
+      },
+      {
+        "value": "1",
+        "label": "Hardware"
+      },
+      {
+        "value": "2",
+        "label": "Stationary dimming"
+      },
+      {
+        "value": "3",
+        "label": "Always on"
+      },
+      {
+        "value": "4",
+        "label": "Always off"
+      }
+    ]
+  },
+  "headset/renderResolutionMultiplierX": {
+    "help": "The multiplier for the 100% render resolution width. This allows you to change the aspect ratio of the resolution as well as reach resolutions outside the 20%-500% range of the SteamVR slider. This may require a restart to apply.",
+    "step": 0.05,
+    "min": 0.1,
+    "max": 2.0
+  },
+  "headset/renderResolutionMultiplierY": {
+    "help": "The multiplier for the 100% render resolution height. This allows you to change the aspect ratio of the resolution as well as reach resolutions outside the 20%-500% range of the SteamVR slider. This may require a restart to apply.",
+    "step": 0.05,
+    "min": 0.1,
+    "max": 2.0
+  },
+  "headset/superSamplingFilterPercent": {
+    "help": "The percentage of the 1:1 resolution that the super sampling downscale area filter is applied. The subpixel shifts with the custom shader can make use of the 500% resolution above 1:1. Without subpixel sampling this value can be lowered to downscale the input so that all pixels contribute to the output. Toggling off advanced supersample filtering in SteamVR will disable this.",
+    "restart": "gameRestart",
+    "step": 10.0,
+    "min": 50.0,
+    "max": 1000.0
+  },
+  "headset/secondsFromVsyncToPhotons": {
+    "help": "The time it takes for the display to update after the GPU has finished rendering. This is used to calculate the time warp correction. Setting it too high or low causes tracking to overshoot or undershoot which makes tracking more jittery.",
+    "step": 0.0005,
+    "min": 0.0,
+    "max": 0.02
+  },
+  "headset/secondsFromPhotonsToVblank": {
+    "help": "The time it takes for the display to show the first and last line. This is to combat the same effect you see on your desktop if you follow a window while you quickly move it side to side.",
+    "restart": "steamvrRestart",
+    "step": 0.00025,
+    "min": 0.0,
+    "max": 0.01
+  },
+  "headset/autoEyeRotation": {
+    "help": "The angle each eye is rotated outwards. With some training it might allow increasing FOV at the expense of binocular overlap and comfort. For every 1 degree this is increased 2 degrees of fov are added. This will mess with your eyes in and out of VR unless you do some extreme modding to the headset."
+  },
+  "headset/eyeRotation": {
+    "help": "The angle each eye is rotated outwards. With some training it might allow increasing FOV at the expense of binocular overlap and comfort. For every 1 degree this is increased 2 degrees of fov are added. This will mess with your eyes in and out of VR unless you do some extreme modding to the headset.",
+    "step": 0.1,
+    "min": -5.0,
+    "max": 15.0
+  },
+  "headset/disableEye": {
+    "help": "Disables an eye. This can provide more performance to the remaining eye once the game is restarted. Eyes can not be completely disabled in SteamVR so this covers the entire eye with the hidden area mesh. The hidden area mesh change does require a restart and may black out the desktop view. It can also set the FOV extremely low when disableEyeDecreaseFov is manually set in settings.json, but that can cause issues.",
+    "restart": "gameRestart",
+    "options": [
+      {
+        "value": "0",
+        "label": "Both eyes"
+      },
+      {
+        "value": "1",
+        "label": "Disable left"
+      },
+      {
+        "value": "2",
+        "label": "Disable right"
+      },
+      {
+        "value": "3",
+        "label": "Disable both"
+      }
+    ]
+  },
+  "headset/disableEyeDecreaseFov": {
+    "help": "Set the FOV to near zero for the disabled eye. By decreasing the FOV, occlusion culling may be able to decrease the rendering load. This can cause issues with some games."
+  },
+  "headset/recenterPimaxPlayspace": {
+    "help": "Recenter the Pimax SLAM playspace every time SteamVR is started. This works around the bug that Pimax Play completely forgets the origin of the playspace when restarting. If your headset is in a similar place every time you start up SteamVR, this will work well.",
+    "restart": "steamvrRestart"
+  },
+  "headset/enablePimaxPassthrough": {
+    "help": "Enable using the cameras on SLAM headsets for passthrough in SteamVR. Beware that there may be some bugs that cause it to hang SteamVR, and you need a new version of Pimax Evo for this to work.",
+    "restart": "steamvrRestart"
+  },
+  "customShader/enable": {
+    "help": "Enables the custom shader. This will replace shaders in SteamVR."
+  },
+  "customShader/enableForOther": {
+    "help": "Enables the custom shader for all other HMDs. Non-native SteamVR headsets likely won't work yet."
+  },
+  "customShader/samplingFilter": {
+    "help": "The sampling filter to use for the custom shader. These filters are one of the best ways to increase image quality in this driver. The default is the standard linear filter, but other options may increase sharpness or reduce aliasing. However these filters increase GPU memory bandwidth usage. Click for more information.",
+    "options": [
+      {
+        "value": "None",
+        "label": "None"
+      },
+      {
+        "value": "FXAA2CAS",
+        "label": "FXAA2 CAS"
+      },
+      {
+        "value": "CAS",
+        "label": "Contrast Adaptive Sharpen"
+      },
+      {
+        "value": "FXAA2",
+        "label": "FXAA2"
+      },
+      {
+        "value": "LumaSharpen",
+        "label": "Luma Sharpen"
+      },
+      {
+        "value": "NearestNeighbor",
+        "label": "Nearest Neighbor"
+      }
+    ]
+  },
+  "customShader/samplingFilterFXAA2SharpenStrength": {
+    "help": "Strength of the FXAA2 sharpening effect. Higher values produce more sharpening.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 5.0
+  },
+  "customShader/samplingFilterFXAA2SharpenClamp": {
+    "help": "Limits maximum amount of sharpening a pixel receives. Lower values reduce artifacts at the cost of some sharpness.",
+    "step": 0.005,
+    "min": 0.0,
+    "max": 0.3
+  },
+  "customShader/samplingFilterFXAA2CASStrength": {
+    "help": "Strength of the FXAA 2CAS sharpening effect. Higher values produce more sharpening.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 2.0
+  },
+  "customShader/samplingFilterFXAA2CASContrast": {
+    "help": "Contrast of the FXAA2 CAS sharpening effect. Higher values increase the sharpness of the image.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 1.0
+  },
+  "customShader/samplingFilterLumaSharpenStrength": {
+    "help": "Strength of the sharpening effect. Higher values produce more sharpening.",
+    "step": 0.1,
+    "min": 0.1,
+    "max": 5.0
+  },
+  "customShader/samplingFilterLumaSharpenClamp": {
+    "help": "Limits maximum amount of sharpening a pixel receives. Lower values reduce artifacts at the cost of some sharpness.",
+    "step": 0.005,
+    "min": 0.0,
+    "max": 0.3
+  },
+  "customShader/samplingFilterLumaSharpenPattern": {
+    "help": "The sample pattern to use for the sharpening effect. Different patterns produce slightly different results.",
+    "options": [
+      {
+        "value": "0",
+        "label": "Fast"
+      },
+      {
+        "value": "1",
+        "label": "Normal"
+      },
+      {
+        "value": "2",
+        "label": "Wider"
+      },
+      {
+        "value": "3",
+        "label": "Pyramid shaped"
+      }
+    ]
+  },
+  "customShader/samplingFilterLumaSharpenRadius": {
+    "help": "Radius of the sampling pattern. Higher values produce a wider effect. 1.0 is best in most cases, but higher values may help some blurry content.",
+    "step": 0.1,
+    "min": 0.1,
+    "max": 6.0
+  },
+  "customShader/samplingFilterCASStrength": {
+    "help": "The strength of the CAS filter. Higher values produce a sharper image.",
+    "step": 0.1,
+    "min": 0.1,
+    "max": 2.0
+  },
+  "customShader/samplingFilterCASContrast": {
+    "help": "The contrast of the CAS filter. Higher values increase the sharpness of the image.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 1.0
+  },
+  "customShader/enableFilterForOverlay": {
+    "help": "Enables the filters for the SteamVR menu and overlays. Enabling this has a noticeable performance impact. Even when the menu is closed and there are no overlays, there is some decrease in performance. The SteamVR background is also an overlay so the filters will have no effects outside of games when this is off."
+  },
+  "customShader/enableFilterForDashboard": {
+    "help": "Enables the filters when the SteamVR dashboard is open. This only activates when the dashboard is actually visible, so there is no performance impact when the dashboard is closed. This does cause a lag spike when opening or closing the dashboard. The driver can not detect if the menu is open at startup, so the menu will have to be re-opened for this to take effect."
+  },
+  "customShader/contrast": {
+    "help": "Adjusts the contrast of the image. When higher than 50, the colors in the image will be expanded away from the midpoint. When lower than 50, the colors in the image will be contracted towards the midpoint.",
+    "step": 0.1,
+    "min": 1.0,
+    "max": 100.0
+  },
+  "customShader/contrastMidpoint": {
+    "help": "Adjusts the midpoint of the contrast. This controls the center of the contrast adjustment. For example when this is 100 all colors will move towards or away from white. When this is 0 all colors will move towards or away from black, which gives a brightening or darkening effect.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 100.0
+  },
+  "customShader/contrastLinear": {
+    "help": "Applies linear contrast to the image before gamma correction instead of after. Generally contrast looks better with this option off but it can be useful for some effects."
+  },
+  "customShader/contrastPerEye": {
+    "help": "Applies contrast to each eye separately which allows you to correct for differences in displays. This will be applied in addition to the above contrast."
+  },
+  "customShader/contrastPerEyeLinear": {},
+  "customShader/contrastLeft": {
+    "step": 0.1,
+    "min": 1.0,
+    "max": 100.0
+  },
+  "customShader/contrastMidpointLeft": {
+    "step": 0.1,
+    "min": 0.0,
+    "max": 100.0
+  },
+  "customShader/contrastRight": {
+    "step": 0.1,
+    "min": 1.0,
+    "max": 100.0
+  },
+  "customShader/contrastMidpointRight": {
+    "step": 0.1,
+    "min": 0.0,
+    "max": 100.0
+  },
+  "customShader/saturation": {
+    "help": "Adjusts the saturation of the image. When higher than 50, the colors in the image will be exaggerated. When lowered all the way to 0 the image will be grayscale.",
+    "step": 0.1,
+    "min": 0.0,
+    "max": 100.0
+  },
+  "customShader/gamma": {
+    "help": "Adjusts the gamma of the image. This controls how brightness is mapped to the display's brightness. Higher gamma values make darker areas of the image brighter.",
+    "step": 0.1,
+    "min": 0.1,
+    "max": 4.0
+  },
+  "customShader/subpixelShift": {
+    "help": "Samples subpixels from the correct locations in the image to improve sharpness by lighting up individual subpixels. This can have a remarkable effect on the MeganeX, and Dream Air where it can extract detail from more than 300% of the 1:1 resolution. The Vive is also supported but the improvement is less noticeable."
+  },
+  "customShader/disableMuraCorrection": {
+    "help": "This forcibly disables the mura correction on any headset that has it like the Vive."
+  },
+  "customShader/disableBlackLevels": {
+    "help": "Forces the black level clamp to be disabled. This can make headsets like the Vive darker at the expense of more smearing."
+  },
+  "customShader/srgbColorCorrection": {
+    "help": "Enables sRGB color correction. The MeganeX is a Display-P3 display and normally colors are oversaturated by mapping the srgb outputs of applications to the full color space. When this is enabled, only the srgb portion of the display is used, which can make colors look more accurate."
+  },
+  "customShader/srgbWhitePointCorrection": {
+    "help": "Corrects the sRGB white point in addition to the colors. This may result in a warmer image but more accurate colors to the sRGB standard."
+  },
+  "customShader/lensColorCorrection": {
+    "help": "This corrects color uniformity issues created by the lenses. On the MeganeX this fixes the warmer colors in the center of the lenses. On the Dream Air this fixes the red tint around the edges."
+  },
+  "customShader/dither10Bit": {
+    "help": "Enables 10 bit dithering. This allows a 10 bit input to be shown on an 8 bit display. Pixels are dithered spatially and temporally to allow more colors to be represented. This works for the MeganeX and all other native headsets but will only have an effect for 10 bit VR applications. There may be some slight benefit to having this on when other color corrections are used."
+  },
+  "customShader/enableForMeganeX8K": {
+    "help": "Enables the custom shader for the MeganeX 8K."
+  },
+  "customShader/enableForPimax": {
+    "help": "Enables the custom shader for all Pimax headsets."
+  },
+  "takeCompositorScreenshots": {
+    "help": "Makes SteamVR take compositor debug screenshots whenever a normal screenshot is taken. These screenshots are higher resolution and also include the exact output sent to the headset. The folder containing them will open when a screenshot is taken. In some cases standard screenshots do not work with the MeganeX but these are still functional. They are more performance intensive than normal screenshots."
+  },
+  "forceTracking": {
+    "help": "Forces all tracked devices to always report as valid and tracking, even if no tracking data is received. This may reduce grey screens but also has the effect of making all tracked devices snap to the origin if they completely lose tracking."
+  },
+  "forceTrackingHeadsetOnly": {
+    "help": "Forces only the headset to always report as valid and tracking, even if no tracking data is received. Controllers and trackers are unaffected. This can help prevent grey screens in certain circumstances."
+  },
+  "generalHeadset/useViveBluetooth": {
+    "help": "Enables the use of the original Vive's link box for any headset to control base stations directly with SteamVR.",
+    "restart": "steamvrRestart"
+  }
+}

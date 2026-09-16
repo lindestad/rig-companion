@@ -212,6 +212,38 @@ pub fn toggle_dashboard_closed() -> Result<()> {
     Ok(())
 }
 
+pub fn toggle_passthrough() -> Result<()> {
+    let result = Command::new(runtime_dir()?.join("bin/win64/vrcmd.exe"))
+        .args(["--compositorcmd", "camera_room_view_toggle"])
+        .creation_flags(0x08000000)
+        .output()?;
+    ensure!(
+        result.status.success(),
+        "SteamVR rejected the camera toggle"
+    );
+    Ok(())
+}
+
+pub fn quit_steamvr() -> Result<()> {
+    if !process_running("vrserver.exe")? && !process_running("vrmonitor.exe")? {
+        return Ok(());
+    }
+    Command::new(runtime_dir()?.join("bin/win64/vrmonitor.exe"))
+        .arg("vrmonitor://quit")
+        .creation_flags(0x08000000)
+        .spawn()
+        .context("Cannot request SteamVR shutdown")?;
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while process_running("vrserver.exe")? || process_running("vrmonitor.exe")? {
+        ensure!(
+            Instant::now() < deadline,
+            "SteamVR has not finished shutting down. Close any VR application prompts, then press Quit again."
+        );
+        std::thread::sleep(Duration::from_millis(200));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

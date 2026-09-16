@@ -1,6 +1,8 @@
 pub mod calibration;
+pub mod driver_settings;
 pub mod eye_calibration;
 pub mod eyes;
+pub mod ipc;
 pub mod profile;
 pub mod service;
 pub mod startup;

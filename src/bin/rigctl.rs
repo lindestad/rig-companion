@@ -21,6 +21,8 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Action {
+    /// Ask the running GUI to shut down itself and SteamVR cleanly.
+    Quit,
     /// Read one eye diagnostic snapshot; may run alongside the GUI.
     EyeStatus,
     /// Query calibration capabilities in an isolated helper; no calibration writes.
@@ -65,6 +67,14 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
     let args = Args::parse();
+    if matches!(args.command, Action::Quit) {
+        rig_companion::ipc::request_quit(args.demo)?;
+        println!(
+            "{}",
+            serde_json::json!({"ok":true,"shutdown_requested":true})
+        );
+        return Ok(());
+    }
     if matches!(args.command, Action::EyeCalibrationStatus) {
         anyhow::ensure!(
             !args.demo,

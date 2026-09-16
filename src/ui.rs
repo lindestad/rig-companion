@@ -182,14 +182,19 @@ impl App {
             return;
         }
         if self.countdown_enabled {
-            self.pending = Some((Instant::now() + Duration::from_secs(3), command));
+            let delay = if matches!(command, Command::Recenter98) {
+                Duration::from_millis(500)
+            } else {
+                Duration::from_secs(3)
+            };
+            self.pending = Some((Instant::now() + delay, command));
         } else {
             self.dispatch(command);
         }
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        iced::time::every(Duration::from_millis(250)).map(|_| Message::Tick)
+        iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick)
     }
 
     pub fn theme(&self) -> Theme {
@@ -283,11 +288,10 @@ impl App {
 
         let restore_label = if let Some((deadline, _)) = &self.pending {
             format!(
-                "Sit back · {}",
+                "Sit back · {:.1}s",
                 deadline
                     .saturating_duration_since(Instant::now())
                     .as_secs_f32()
-                    .ceil() as u32
             )
         } else if self.state.busy {
             "Working…".into()

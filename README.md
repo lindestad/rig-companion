@@ -12,13 +12,13 @@ The first implementation includes a dark desktop interface with large controls, 
 cargo run --release --bin rig-companion
 ```
 
-Or launch `target/release/rig-companion.exe` after `cargo build --release`. Start SteamVR and click **Connect SteamVR** if needed. Allow tracking to settle, sit normally and use **Restore seated height**. View this desktop app through SteamVR's desktop panel; this is not a custom in-headset overlay.
+Or launch `target/release/rig-companion.exe` after `cargo build --release`. The app automatically retries connecting every two seconds while SteamVR is unavailable, including after a runtime restart. It does not start SteamVR itself. Allow tracking to settle, sit normally and use **Restore seated height**. View this desktop app through SteamVR's desktop panel; this is not a custom in-headset overlay.
 
 Use `cargo run --bin rig-companion -- --demo` to exercise the interface without touching SteamVR. Demo profiles are separate from live profiles.
 
 Keep the window open or minimized. Closing it quits the app and releases the hotkeys. **Global shortcuts** are enabled at launch, unless registration fails:
 
-- **F13:** restore 98 cm plus saved horizontal position and heading. Without a captured reference, use the SteamVR origin and forward direction. Uses the three-second countdown; sit normally and look forward.
+- **F13:** restore 98 cm plus saved horizontal position and heading. Without a captured reference, use the SteamVR origin and forward direction. Waits **0.5 seconds**, then checks tracking stability and applies the correction; sit normally and look forward. The GUI height/capture countdown remains three seconds. Disabling countdown removes the delay for both.
 - **F14:** click the SteamVR dashboard gaze pointer through a virtual Xbox right trigger. Requires ViGEmBus (already installed on this PC). The dashboard must be visible. The first click attaches the gamepad; if SteamVR is still discovering it, press again. Closing the app detaches it.
 - **Ctrl+Alt+F8:** saved height only; **Ctrl+Alt+F9:** undo/cancel countdown; **Ctrl+Alt+F7:** open dashboard.
 

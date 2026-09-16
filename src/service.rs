@@ -396,7 +396,7 @@ impl Engine {
                     self.gaze = None;
                     return Err(error);
                 }
-                Ok("VR click sent through the virtual gamepad right trigger.".into())
+                Ok("Windows confirmed the right-trigger pulse. SteamVR gaze selection is not confirmed.".into())
             }
         }
     }
@@ -426,6 +426,7 @@ impl Worker {
                     state: initial,
                 };
                 let _ = engine.run(Command::Connect);
+                let mut last_connect_attempt = std::time::Instant::now();
                 loop {
                     *shared.lock().unwrap() = engine.state.clone();
                     match receiver.recv_timeout(Duration::from_millis(250)) {
@@ -433,7 +434,16 @@ impl Worker {
                             shared.lock().unwrap().busy = true;
                             let _ = engine.run(command);
                         }
-                        Err(mpsc::RecvTimeoutError::Timeout) => engine.refresh(),
+                        Err(mpsc::RecvTimeoutError::Timeout) => {
+                            engine.refresh();
+                            if !engine.state.connected
+                                && last_connect_attempt.elapsed() >= Duration::from_secs(2)
+                            {
+                                // Background initialization never launches SteamVR itself.
+                                last_connect_attempt = std::time::Instant::now();
+                                let _ = engine.run(Command::Connect);
+                            }
+                        }
                         Err(mpsc::RecvTimeoutError::Disconnected) => break,
                     }
                 }

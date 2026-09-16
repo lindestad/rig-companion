@@ -38,4 +38,6 @@ This build commits the standing-to-raw origin through ChaperoneSetup. It refresh
 
 The seated origin is deliberately not overwritten by the standing correction. A game with its own seated recenter may behave differently from the lobby; test those transitions before expanding the correction policy. The box's Windows mouse and keyboard firmware remains a separate future component.
 
-No dedicated “view desktop” command is claimed yet. Open dashboard is implemented through the OpenVR overlay API; navigating its desktop panel remains runtime behaviour to validate. Closing the app currently quits it; minimizing keeps hotkeys active. Tray support and automatic reconnect/autostart are not implemented in this first version.
+No dedicated “view desktop” command is claimed yet. Open dashboard is implemented through the OpenVR overlay API; navigating its desktop panel remains runtime behaviour to validate. Closing the app currently quits it; minimizing keeps hotkeys active. Automatic reconnect now retries every two seconds; tray support and Windows autostart remain unimplemented.
+
+The F13 delay is now 500 ms, followed by the existing 320 ms stability sampling. UI timer resolution is 50 ms; other GUI capture/height commands retain their three-second countdown. The physical XInput probe confirmed virtual trigger 0 → 255 → 0 with SteamVR stopped. See [gaze-click research](gaze-click-research.md) for documented HMD and gamepad routes and the still-unresolved dashboard selection failure.

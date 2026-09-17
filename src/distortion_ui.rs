@@ -2,6 +2,129 @@ use iced::{Color, Point, Rectangle, Renderer, Theme, mouse, widget::canvas};
 use rig_companion::distortion::Profile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Channel {
+    Green,
+    Red,
+    Blue,
+}
+impl Channel {
+    pub fn key(self) -> Option<&'static str> {
+        match self {
+            Self::Green => None,
+            Self::Red => Some("distortionsRed"),
+            Self::Blue => Some("distortionsBlue"),
+        }
+    }
+}
+impl std::fmt::Display for Channel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Green => "Green / base",
+            Self::Red => "Red channel",
+            Self::Blue => "Blue channel",
+        })
+    }
+}
+
+pub struct SpatialPlot {
+    pub mapping: rig_companion::distortion::SpatialPreview,
+    pub vectors: bool,
+}
+impl<Message> canvas::Program<Message> for SpatialPlot {
+    type State = ();
+    fn draw(
+        &self,
+        _: &(),
+        renderer: &Renderer,
+        _: &Theme,
+        bounds: Rectangle,
+        _: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut f = canvas::Frame::new(renderer, bounds.size());
+        let center = Point::new(bounds.width / 2., bounds.height / 2.);
+        let scale = (bounds.width.min(bounds.height) / 2. - 24.).max(1.);
+        let point = |p: [f32; 2]| Point::new(center.x + p[0] * scale, center.y - p[1] * scale);
+        let reference = Color::from_rgb8(72, 72, 80);
+        let mapped = Color::from_rgb8(222, 222, 233);
+        let arrow = Color::from_rgb8(228, 156, 94);
+        f.stroke(
+            &canvas::Path::circle(center, scale),
+            canvas::Stroke::default().with_color(reference),
+        );
+        for axis in 0..2 {
+            for line in -4..=4 {
+                let fixed = line as f32 / 5.;
+                let mut prior = None;
+                for step in 0..=100 {
+                    let moving = -1. + step as f32 / 50.;
+                    let p = if axis == 0 {
+                        [fixed, moving]
+                    } else {
+                        [moving, fixed]
+                    };
+                    if let Some(q) = self.mapping.map(p) {
+                        if let Some((old_p, old_q)) = prior {
+                            f.stroke(
+                                &canvas::Path::line(point(old_p), point(p)),
+                                canvas::Stroke::default()
+                                    .with_color(reference)
+                                    .with_width(0.8),
+                            );
+                            f.stroke(
+                                &canvas::Path::line(point(old_q), point(q)),
+                                canvas::Stroke::default().with_color(mapped).with_width(1.3),
+                            );
+                        }
+                        prior = Some((p, q));
+                    } else {
+                        prior = None;
+                    }
+                }
+            }
+        }
+        for y in -4..=4 {
+            for x in -4..=4 {
+                let p = [x as f32 / 5., y as f32 / 5.];
+                if let Some(q) = self.mapping.map(p) {
+                    let a = point(p);
+                    let b = point(q);
+                    if self.vectors {
+                        f.stroke(
+                            &canvas::Path::line(a, b),
+                            canvas::Stroke::default().with_color(arrow),
+                        );
+                        let dx = b.x - a.x;
+                        let dy = b.y - a.y;
+                        let length = dx.hypot(dy);
+                        if length > 3. {
+                            let ux = dx / length;
+                            let uy = dy / length;
+                            let tip = length.min(5.);
+                            for side in [-1., 1.] {
+                                let end = Point::new(
+                                    b.x - ux * tip - uy * tip * 0.5 * side,
+                                    b.y - uy * tip + ux * tip * 0.5 * side,
+                                );
+                                f.stroke(
+                                    &canvas::Path::line(end, b),
+                                    canvas::Stroke::default().with_color(arrow),
+                                );
+                            }
+                        }
+                    }
+                    f.fill(&canvas::Path::circle(b, 2.3), mapped);
+                }
+            }
+        }
+        f.fill(
+            &canvas::Path::circle(center, 4.),
+            Color::from_rgb8(184, 151, 236),
+        );
+        vec![f.into_geometry()]
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
     Mapping,
     Chromatic,

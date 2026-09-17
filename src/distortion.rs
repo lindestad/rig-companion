@@ -61,6 +61,86 @@ pub struct Catalogue {
     pub profiles: BTreeMap<String, Profile>,
     pub warnings: Vec<String>,
 }
+
+/// Educational forward mapping from a rectilinear scene to radial panel coordinates.
+/// The outer green radius is normalized to one. Uses linear knot interpolation,
+/// deliberately excluding runtime interpolation, optical offsets and per-eye projection.
+pub struct SpatialPreview {
+    base: Vec<[f32; 2]>,
+    correction: Vec<[f32; 2]>,
+    pub half_angle: f32,
+    outer: f32,
+}
+impl SpatialPreview {
+    pub fn new(
+        profile: &Profile,
+        half_angle: f32,
+        correction: Option<&str>,
+    ) -> Result<Self, String> {
+        let base = profile.points("distortions")?;
+        if base.len() < 2 || base[0] != [0., 0.] || base.iter().any(|p| p[1] < 0.) {
+            return Err(
+                "Spatial preview needs a radial profile starting at (0, 0) with nonnegative radii."
+                    .into(),
+            );
+        }
+        if !half_angle.is_finite()
+            || !(1.0..=75.0).contains(&half_angle)
+            || half_angle > base.last().unwrap()[0]
+        {
+            return Err("Preview angle is outside the published profile range.".into());
+        }
+        let outer = interpolate(&base, half_angle);
+        if outer <= 0. {
+            return Err("Profile has no usable radial extent.".into());
+        }
+        let correction_points = correction
+            .map(|k| profile.points(k))
+            .transpose()?
+            .unwrap_or_default();
+        if correction.is_some() && correction_points.is_empty() {
+            return Err("No correction points published for this color channel.".into());
+        }
+        Ok(Self {
+            base,
+            correction: correction_points,
+            half_angle,
+            outer,
+        })
+    }
+    pub fn map(&self, p: [f32; 2]) -> Option<[f32; 2]> {
+        let r = p[0].hypot(p[1]);
+        if !r.is_finite() || r > 1.00001 {
+            return None;
+        }
+        if r < 0.000001 {
+            return Some([0., 0.]);
+        }
+        let angle = (r * self.half_angle.to_radians().tan()).atan().to_degrees();
+        let radial = interpolate(&self.base, angle) / self.outer;
+        let multiplier = 1. + interpolate(&self.correction, angle) / 100.;
+        Some([
+            p[0] / r * radial * multiplier,
+            p[1] / r * radial * multiplier,
+        ])
+    }
+}
+fn interpolate(points: &[[f32; 2]], angle: f32) -> f32 {
+    if points.is_empty() {
+        return 0.;
+    }
+    if angle <= points[0][0] {
+        return points[0][1];
+    }
+    for pair in points.windows(2) {
+        if angle <= pair[1][0] {
+            let t = (angle - pair[0][0]) / (pair[1][0] - pair[0][0]);
+            return pair[0][1] + t * (pair[1][1] - pair[0][1]);
+        }
+    }
+    // Outside correction coverage, hold the endpoint; no invented extrapolation.
+    points.last().unwrap()[1]
+}
 impl Catalogue {
     pub fn load(info: &Value, directory: &Path) -> Self {
         let mut out = Self::default();
@@ -150,6 +230,22 @@ impl Catalogue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn spatial_mapping_preserves_center_and_tangent_reference_and_applies_color_percent() {
+        let p = Profile {
+            name: "test".into(),
+            source: "test".into(),
+            data: serde_json::json!({"type":"RadialBezier","distortions":[0.,0.,(0.5f32).atan().to_degrees(),50.,45.,100.],"distortionsRed":[0.,2.,45.,2.]}),
+        };
+        let green = SpatialPreview::new(&p, 45., None).unwrap();
+        assert_eq!(green.map([0., 0.]), Some([0., 0.]));
+        assert!((green.map([0.5, 0.]).unwrap()[0] - 0.5).abs() < 1e-6);
+        assert!((green.map([1., 0.]).unwrap()[0] - 1.).abs() < 1e-6);
+        let red = SpatialPreview::new(&p, 45., Some("distortionsRed")).unwrap();
+        assert!((red.map([0.5, 0.]).unwrap()[0] - 0.51).abs() < 1e-6);
+        assert!(green.map([1., 1.]).is_none());
+        assert!(SpatialPreview::new(&p, 60., None).is_err());
+    }
     #[test]
     fn catalogue_matches_devices_preserves_unknown_selection_and_builtin_precedence() {
         let dir = tempfile::tempdir().unwrap();

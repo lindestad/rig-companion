@@ -1,4 +1,4 @@
-use crate::distortion_ui::{Mode, Plot};
+use crate::distortion_ui::{Channel, Mode, Plot, SpatialPlot};
 use iced::{
     Element, Fill, Task,
     widget::{
@@ -20,6 +20,10 @@ pub enum Message {
     Preview(String),
     PlotMode(Mode),
     Compare(bool),
+    Spatial(bool),
+    Vectors(bool),
+    PreviewAngle(f32),
+    Channel(Channel),
     Edit(String, String),
     Reset(String),
     Apply,
@@ -35,6 +39,10 @@ pub struct State {
     preview: Option<String>,
     plot_mode: Mode,
     compare: bool,
+    spatial: bool,
+    vectors: bool,
+    preview_angle: f32,
+    channel: Channel,
     busy: bool,
     status: String,
 }
@@ -50,6 +58,10 @@ impl Default for State {
             preview: None,
             plot_mode: Mode::Mapping,
             compare: true,
+            spatial: true,
+            vectors: true,
+            preview_angle: 40.,
+            channel: Channel::Green,
             busy: false,
             status: "Load settings from the custom driver.".into(),
         }
@@ -110,6 +122,10 @@ impl State {
             }
             Message::PlotMode(v) => self.plot_mode = v,
             Message::Compare(v) => self.compare = v,
+            Message::Spatial(v) => self.spatial = v,
+            Message::Vectors(v) => self.vectors = v,
+            Message::PreviewAngle(v) => self.preview_angle = v,
+            Message::Channel(v) => self.channel = v,
             Message::Edit(p, v) if !self.busy => {
                 if self
                     .settings
@@ -176,6 +192,41 @@ impl State {
             None => driver_settings::display(&f.value),
         }
     }
+    fn spatial_preview(
+        &self,
+        profile: &rig_companion::distortion::Profile,
+    ) -> Element<'_, Message> {
+        let muted = iced::Color::from_rgb8(164, 164, 173);
+        let max = profile
+            .points("distortions")
+            .ok()
+            .and_then(|p| p.last().copied())
+            .map(|p| p[0].clamp(1., 75.))
+            .unwrap_or(60.);
+        let angle = self.preview_angle.clamp(1., max);
+        let diagram: Element<'_, Message> = match rig_companion::distortion::SpatialPreview::new(
+            profile,
+            angle,
+            self.channel.key(),
+        ) {
+            Ok(mapping) => iced::widget::canvas(SpatialPlot {
+                mapping,
+                vectors: self.vectors,
+            })
+            .width(Fill)
+            .height(360)
+            .into(),
+            Err(error) => container(text(error).color(muted)).padding(20).into(),
+        };
+        column![
+            text("Spatial warp · schematic").size(19),
+            text("Gray: straight scene grid · white: warped panel grid · orange arrows: point displacement").size(12).color(muted),
+            row![pick_list([Channel::Green,Channel::Red,Channel::Blue],Some(self.channel),Message::Channel).width(175),checkbox(self.vectors).label("Displacement vectors").on_toggle(Message::Vectors)].spacing(18).align_y(iced::Alignment::Center),
+            row![text(format!("Preview radius: {angle:.0}°")).width(170),slider(1.0..=max,angle,Message::PreviewAngle).step(1_f32).width(Fill)].spacing(12).align_y(iced::Alignment::Center),
+            diagram,
+            text("Arrows run from scene points to panel points at actual diagram scale. The outer green radius is aligned for comparison, so this shows shape rather than absolute magnification. This single-eye schematic uses linear interpolation and holds color corrections at their endpoints; it omits per-eye offsets, lens fit, and runtime smoothing. Preview radius changes only this diagram, not your headset FOV. Correctly matched lenses should make the warped grid appear straight.").size(12).color(muted)
+        ].spacing(12).into()
+    }
     fn profile_preview<'a>(
         &'a self,
         s: &'a Settings,
@@ -221,7 +272,9 @@ impl State {
             text(profile.description()).size(14).color(muted),
             checkbox(self.compare).label(format!("Compare with {default}")).on_toggle(Message::Compare),
             text(meta).size(12).color(muted),plot,text(legend).size(12).color(muted),
-            text("X: angle from optical center. Dots are published control points; connecting lines are guides, not the driver's smoothed curve. This is not an in-headset lens simulation and excludes your FOV/zoom/IPD adjustments. Preview does not apply settings.").size(12).color(muted)
+            text("X: angle from optical center. Dots are published control points; connecting lines are guides, not the driver's smoothed curve. This is not an in-headset lens simulation and excludes your FOV/zoom/IPD adjustments. Preview does not apply settings.").size(12).color(muted),
+            checkbox(self.spatial).label("Show spatial grid and vectors").on_toggle(Message::Spatial),
+            if self.spatial {self.spatial_preview(profile)}else{iced::widget::Space::new().into()}
         ].spacing(10)).padding(18).style(|_|container::Style{background:Some(iced::Color::from_rgb8(15,15,18).into()),border:iced::border::rounded(12),..Default::default()}).into()
     }
     pub fn view(&self) -> Element<'_, Message> {

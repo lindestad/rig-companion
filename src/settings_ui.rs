@@ -1,3 +1,4 @@
+use crate::distortion_ui::{Mode, Plot};
 use iced::{
     Element, Fill, Task,
     widget::{
@@ -6,6 +7,7 @@ use iced::{
     },
 };
 use rig_companion::driver_settings::{self, Settings};
+use rig_companion::settings_categories::{self, Category};
 use std::collections::BTreeMap;
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -14,6 +16,10 @@ pub enum Message {
     Filter(bool),
     Search(String),
     Group(String),
+    Category(Category),
+    Preview(String),
+    PlotMode(Mode),
+    Compare(bool),
     Edit(String, String),
     Reset(String),
     Apply,
@@ -25,6 +31,10 @@ pub struct State {
     filtered: bool,
     search: String,
     group: String,
+    category: Category,
+    preview: Option<String>,
+    plot_mode: Mode,
+    compare: bool,
     busy: bool,
     status: String,
 }
@@ -35,7 +45,11 @@ impl Default for State {
             changes: BTreeMap::new(),
             filtered: true,
             search: String::new(),
-            group: "Dream Air".into(),
+            group: "All applicable".into(),
+            category: Category::Frequent,
+            preview: None,
+            plot_mode: Mode::Mapping,
+            compare: true,
             busy: false,
             status: "Load settings from the custom driver.".into(),
         }
@@ -81,11 +95,21 @@ impl State {
             Message::Filter(v) => {
                 self.filtered = v;
                 if !self.groups().contains(&self.group) {
-                    self.group = "Dream Air".into();
+                    self.group = "All applicable".into();
                 }
             }
             Message::Search(v) => self.search = v,
             Message::Group(v) => self.group = v,
+            Message::Category(v) => self.category = v,
+            Message::Preview(path) => {
+                self.preview = if self.preview.as_ref() == Some(&path) {
+                    None
+                } else {
+                    Some(path)
+                }
+            }
+            Message::PlotMode(v) => self.plot_mode = v,
+            Message::Compare(v) => self.compare = v,
             Message::Edit(p, v) if !self.busy => {
                 if self
                     .settings
@@ -142,7 +166,63 @@ impl State {
             .unwrap_or_default();
         g.sort();
         g.dedup();
+        g.insert(0, "All applicable".into());
         g
+    }
+    fn input(&self, f: &driver_settings::Field) -> String {
+        match self.changes.get(&f.path) {
+            Some(Some(v)) => v.clone(),
+            Some(None) => driver_settings::display(&f.default),
+            None => driver_settings::display(&f.value),
+        }
+    }
+    fn profile_preview<'a>(
+        &'a self,
+        s: &'a Settings,
+        name: &str,
+        default: &str,
+    ) -> Element<'a, Message> {
+        let muted = iced::Color::from_rgb8(164, 164, 173);
+        let Some(profile) = s.profiles.profiles.get(name) else {
+            return container(text(format!("Profile ‘{name}’ is not in the installed catalogue. Its setting is preserved; reload after installing the profile."))).padding(16).into();
+        };
+        let comparison = if self.compare && name != default {
+            s.profiles.profiles.get(default)
+        } else {
+            None
+        };
+        let plot: Element<'_, Message> = match Plot::new(profile, comparison, self.plot_mode) {
+            Ok(plot) => iced::widget::canvas(plot).width(Fill).height(245).into(),
+            Err(error) => container(text(error).color(muted)).padding(24).into(),
+        };
+        let legend = match self.plot_mode {
+            Mode::Mapping => {
+                "White: selected profile · gray: default comparison · Y: radial panel position (driver units)"
+            }
+            Mode::Chromatic => {
+                "Orange: red-channel correction · purple: blue-channel correction · gray: default · Y: percent"
+            }
+        };
+        let data = &profile.data;
+        let meta = format!(
+            "{} · {} · {} control points · optical center ({}, {}) · eye rotation offset {}°",
+            profile.source,
+            data.get("type")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("Unknown"),
+            profile.points("distortions").map(|p| p.len()).unwrap_or(0),
+            data.get("offsetX").unwrap_or(&serde_json::Value::Null),
+            data.get("offsetY").unwrap_or(&serde_json::Value::Null),
+            data.get("eyeRotationOffset")
+                .unwrap_or(&serde_json::Value::Null)
+        );
+        container(column![
+            row![text(format!("{} · preview",profile.name)).size(19),iced::widget::Space::new().width(Fill),pick_list([Mode::Mapping,Mode::Chromatic],Some(self.plot_mode),Message::PlotMode)].spacing(12),
+            text(profile.description()).size(14).color(muted),
+            checkbox(self.compare).label(format!("Compare with {default}")).on_toggle(Message::Compare),
+            text(meta).size(12).color(muted),plot,text(legend).size(12).color(muted),
+            text("X: angle from optical center. Dots are published control points; connecting lines are guides, not the driver's smoothed curve. This is not an in-headset lens simulation and excludes your FOV/zoom/IPD adjustments. Preview does not apply settings.").size(12).color(muted)
+        ].spacing(10)).padding(18).style(|_|container::Style{background:Some(iced::Color::from_rgb8(15,15,18).into()),border:iced::border::rounded(12),..Default::default()}).into()
     }
     pub fn view(&self) -> Element<'_, Message> {
         let muted = iced::Color::from_rgb8(164, 164, 173);
@@ -150,25 +230,81 @@ impl State {
         let query = self.search.to_lowercase();
         let mut count = 0;
         if let Some(s) = &self.settings {
-            for f in s.fields.iter().filter(|f| {
-                (!self.filtered || driver_settings::relevant(&f.path))
-                    && if query.is_empty() {
-                        f.group == self.group
-                    } else {
-                        format!("{} {} {}", f.group, f.label, f.path)
+            let mut fields: Vec<_> = s
+                .fields
+                .iter()
+                .filter(|f| {
+                    (!self.filtered || driver_settings::relevant(&f.path))
+                        && if query.is_empty() {
+                            (self.group == "All applicable" || f.group == self.group)
+                                && self.category.includes(&f.path)
+                        } else {
+                            format!(
+                                "{} {} {} {}",
+                                f.group,
+                                f.label,
+                                f.path,
+                                settings_categories::category(&f.path)
+                            )
                             .to_lowercase()
                             .contains(&query)
-                    }
-            }) {
+                        }
+                })
+                .collect();
+            fields.sort_by_key(|f| {
+                (
+                    settings_categories::category(&f.path),
+                    settings_categories::priority(&f.path),
+                    f.group.clone(),
+                    f.label.clone(),
+                )
+            });
+            let mut last_category = None;
+            for f in fields {
                 count += 1;
-                let input = match self.changes.get(&f.path) {
-                    Some(Some(v)) => v.clone(),
-                    Some(None) => driver_settings::display(&f.default),
-                    None => driver_settings::display(&f.value),
-                };
+                let category = settings_categories::category(&f.path);
+                if last_category != Some(category) {
+                    rows =
+                        rows.push(container(text(category.to_string()).size(19)).padding([12, 0]));
+                    last_category = Some(category);
+                }
+                let input = self.input(f);
                 let path = f.path.clone();
                 let metadata = driver_settings::control(&f.path);
-                let control: Element<'_, Message> = if f.default.is_boolean() {
+                let is_profile = f.path.ends_with("/distortionProfile");
+                let control: Element<'_, Message> = if is_profile {
+                    let device_path = f
+                        .path
+                        .replace("/distortionProfile", "/distortionProfileDeviceType");
+                    let device = s
+                        .fields
+                        .iter()
+                        .find(|p| p.path == device_path)
+                        .map(|p| self.input(p))
+                        .unwrap_or_default();
+                    let names = s.profiles.choices(
+                        &device,
+                        &input,
+                        &driver_settings::display(&f.default),
+                        self.filtered,
+                    );
+                    column![
+                        pick_list(names, Some(input.clone()), move |v| Message::Edit(
+                            path.clone(),
+                            v
+                        ))
+                        .width(310),
+                        button(if self.preview.as_ref() == Some(&f.path) {
+                            "Hide visualizer"
+                        } else {
+                            "Visualize profile"
+                        })
+                        .on_press(Message::Preview(f.path.clone()))
+                        .style(button::secondary)
+                    ]
+                    .spacing(8)
+                    .into()
+                } else if f.default.is_boolean() {
                     checkbox(input == "true")
                         .label(if input == "true" { "On" } else { "Off" })
                         .on_toggle_maybe(
@@ -343,11 +479,79 @@ impl State {
                         ..Default::default()
                     }),
                 );
+                if is_profile && self.preview.as_ref() == Some(&f.path) {
+                    rows = rows.push(self.profile_preview(
+                        s,
+                        &input,
+                        &driver_settings::display(&f.default),
+                    ));
+                }
             }
         }
         if count == 0 {
             rows = rows.push(text("No settings match this selection."));
         }
-        column![text("Headset driver settings").size(34),text("Custom Headset / sboys3").color(muted),checkbox(self.filtered).label("Show only global and Dream Air settings").on_toggle(Message::Filter),row![pick_list(self.groups(),Some(self.group.clone()),Message::Group).width(235),text_input("Search all visible groups…",&self.search).on_input(Message::Search).padding(10)].spacing(14),row![button(if self.busy{"Working…"}else{"Apply changes"}).on_press_maybe((!self.busy&&!self.changes.is_empty()).then_some(Message::Apply)).padding(12).style(button::secondary),button(if self.changes.is_empty(){"Reload"}else{"Discard changes & reload"}).on_press_maybe((!self.busy).then_some(Message::Load)).padding(12).style(button::secondary),text(format!("{} settings · {} pending",count,self.changes.len())).color(muted)].spacing(12).align_y(iced::Alignment::Center),text(&self.status).size(14).color(muted),text("The driver reloads saved settings. SteamVR is never restarted automatically. Arrays use JSON notation.").size(12).color(muted),scrollable(rows).height(Fill)].spacing(14).into()
+        let warnings = self
+            .settings
+            .as_ref()
+            .map(|s| s.profiles.warnings.join("\n"))
+            .unwrap_or_default();
+        column![
+            text("Driver settings").size(30),
+            checkbox(self.filtered)
+                .label("Show only global and Dream Air settings")
+                .on_toggle(Message::Filter),
+            row![
+                pick_list(Category::ALL, Some(self.category), Message::Category).width(210),
+                pick_list(self.groups(), Some(self.group.clone()), Message::Group).width(190),
+                text_input("Search all applicable settings…", &self.search)
+                    .on_input(Message::Search)
+                    .padding(10)
+            ]
+            .spacing(12),
+            row![
+                button(if self.busy {
+                    "Working…"
+                } else {
+                    "Apply changes"
+                })
+                .on_press_maybe((!self.busy && !self.changes.is_empty()).then_some(Message::Apply))
+                .padding(12)
+                .style(button::secondary),
+                button(if self.changes.is_empty() {
+                    "Reload"
+                } else {
+                    "Discard changes & reload"
+                })
+                .on_press_maybe((!self.busy).then_some(Message::Load))
+                .padding(12)
+                .style(button::secondary),
+                text(format!(
+                    "{} settings · {} pending",
+                    count,
+                    self.changes.len()
+                ))
+                .color(muted)
+            ]
+            .spacing(12)
+            .align_y(iced::Alignment::Center),
+            text(if warnings.is_empty() {
+                self.status.clone()
+            } else {
+                format!("{}\n{}", self.status, warnings)
+            })
+            .size(13)
+            .color(muted),
+            text(if query.is_empty() {
+                "Edits stay pending until Apply. Restart requirements are in each setting’s help."
+            } else {
+                "Search spans every category and headset group allowed by the filter."
+            })
+            .size(12)
+            .color(muted),
+            scrollable(rows).height(Fill)
+        ]
+        .spacing(12)
+        .into()
     }
 }

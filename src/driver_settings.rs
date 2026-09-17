@@ -19,6 +19,7 @@ pub struct Field {
 
 #[derive(Debug, Clone)]
 pub struct Settings {
+    pub profiles: crate::distortion::Catalogue,
     pub path: PathBuf,
     pub dream_air_fov_limits: [Option<f64>; 2],
     original: Vec<u8>,
@@ -115,6 +116,13 @@ impl Settings {
         }
         visit(defaults, String::new(), &overrides, &mut fields);
         Ok(Self {
+            profiles: crate::distortion::Catalogue::load(
+                &info,
+                &info_path
+                    .parent()
+                    .context("Missing driver directory")?
+                    .join("Distortion"),
+            ),
             path: path.into(),
             dream_air_fov_limits: ["fovMaxX", "fovMaxY"].map(|axis| {
                 (info.get("connectedHeadset").and_then(Value::as_u64) == Some(4))

@@ -1,4 +1,5 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+mod distortion_ui;
 mod hotkeys;
 mod settings_ui;
 mod ui;

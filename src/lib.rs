@@ -1,10 +1,12 @@
 pub mod calibration;
+pub mod distortion;
 pub mod driver_settings;
 pub mod eye_calibration;
 pub mod eyes;
 pub mod ipc;
 pub mod profile;
 pub mod service;
+pub mod settings_categories;
 pub mod startup;
 pub mod steamvr;
 

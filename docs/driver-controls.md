@@ -2,6 +2,18 @@
 
 ## Driver settings
 
+The page opens on **Frequently used**, across all applicable groups. Distortion profile, IPD and FOV appear first, followed by common image and tracking controls. Categories separate Optics & FOV, Image & color, Tracking & camera, Power & presence and Advanced. All settings retains every field, including unfamiliar fields added by future driver versions. The group picker can narrow to one headset or global/shader controls. Search spans categories/groups allowed by the Dream Air/global filter, and changing categories does not discard pending edits.
+
+### Distortion profiles and visualizer
+
+The distortion profile control is now a dropdown populated from `info.json`'s `builtInDistortionProfiles` and `%APPDATA%/CustomHeadset/Distortion/*.json`. JSON comments are supported. Built-ins take precedence over identically named custom files, matching the driver. The default comes first; compatible and untagged profiles are included. The current/default selection is always retained even if missing or incompatible. Disabling the Dream Air/global filter also shows incompatible profiles. Reload refreshes the catalogue. Broken custom JSON is reported without preventing access to other settings.
+
+**Visualize profile** expands a panel under the selector. It plots the selected draft's published angle/radial-position pairs, or separate red/blue percentage-correction pairs, and optionally compares them with the default. Hover shows plot coordinates. White is the selected radial mapping; orange/purple identify red/blue correction; gray identifies default-profile data. Preview is collapsed initially to keep everyday settings close together.
+
+Dots are profile control points and connecting lines are guides. This does not reproduce the driver's Bezier interpolation, final per-eye warp or the user's FOV/zoom/IPD settings. It is not a simulation through the lenses and cannot diagnose tracking drift. Runtime-backed Pimax profiles and malformed point arrays display an unavailable/error message instead of a fabricated curve. Selection is a pending setting until Apply; preview modes/comparison never write settings or profile files. Existing backup and stale-write protection still applies.
+
+Sources: installed driver `info.json`; fork `54547a9`'s `DeviceConfigComponentBase.ts`, `DistortionProfileConstructor.cpp` and `ConfigLoader.cpp`. Validation covers catalogue precedence, compatibility, custom files with comments, missing selections, invalid point arrays and category fallback. Desktop visual verification was blocked by a Windows computer-use window-binding error (same expected/current `RigCompanion.Desktop` owner).
+
 The settings page reads `%APPDATA%\CustomHeadset\info.json` for the installed driver's defaults and `%APPDATA%\CustomHeadset\settings.json` for overrides. It is an editor for that installed driver, not a second driver process.
 
 The default filter includes Dream Air, General Headset and global fields, plus applicable Custom Shader fields. Turning it off exposes other headset groups. Search spans all groups permitted by the filter. Unknown settings added by the driver are retained. Fields that have no documented GUI metadata remain plain typed inputs.

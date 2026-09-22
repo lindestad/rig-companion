@@ -3,6 +3,7 @@ mod distortion_ui;
 mod hotkeys;
 mod settings_ui;
 mod ui;
+mod wind_ui;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -16,6 +17,9 @@ struct Args {
     /// Connect to an existing VR session without launching Pimax or SteamVR.
     #[arg(long)]
     no_launch: bool,
+    /// Open the wind simulator page at startup.
+    #[arg(long)]
+    wind: bool,
     /// Override the profile location.
     #[arg(long)]
     profile: Option<PathBuf>,
@@ -58,7 +62,7 @@ fn run() -> anyhow::Result<()> {
         args.demo,
         !args.no_launch,
     )?;
-    let app = std::cell::RefCell::new(Some(ui::App::new(worker, lock)));
+    let app = std::cell::RefCell::new(Some(ui::App::new(worker, lock, args.wind)));
     iced::application(
         move || app.borrow_mut().take().expect("application boots once"),
         ui::App::update,

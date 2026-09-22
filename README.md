@@ -30,6 +30,8 @@ F13 always uses 98 cm, without overwriting the saved profile. Disable Global sho
 
 The **Driver settings** page reads the installed sboys defaults and overrides. It defaults to global/Dream Air settings, with search, sliders, embedded number steppers, dropdowns and hover help taken from the sboys controls. Changes remain drafts until **Apply changes**. See [driver controls and camera](docs/driver-controls.md).
 
+The **Wind simulator** page controls the LINDESTAD USB fan board, with minimum/maximum airflow, always/SteamVR/iRacing run modes, per-side enable switches and periodic RPM/status. The included SimHub plugin supplies vehicle speed over localhost while Rig Companion owns the COM port. See [setup and wind behavior](docs/wind-simulator.md). Wind defaults to disabled; enable it and apply your settings when ready.
+
 ## CLI and development
 
 The main page includes five [game launcher shortcuts](docs/game-launchers.md). Each ensures SimPro and SimHub are running; iRacing additionally starts MAIRA when needed. `rigctl launcher-status iracing` inspects the configuration without launching.
@@ -58,7 +60,7 @@ Profiles live in the Windows local application-data directory returned by `direc
 
 Automated calibration/storage tests and desktop demo interaction have passed. The user has confirmed live F13 correction, native gaze clicking and desktop dashboard opening in VR. See [testing notes](docs/testing.md).
 
-The correction currently changes SteamVR's standing/floor origin, preserving the seated origin and boundary data. It does not change Pimax tracking itself or iRacing's recenter bind. Changes are committed to SteamVR calibration; they can persist after quitting. Avoid running another playspace-offset tool while testing. A tray daemon, firmware and USB hardware integration remain future work.
+The correction currently changes SteamVR's standing/floor origin, preserving the seated origin and boundary data. It does not change Pimax tracking itself or iRacing's recenter bind. Changes are committed to SteamVR calibration; they can persist after quitting. Avoid running another playspace-offset tool while testing. A tray daemon and additional USB button hardware remain future work.
 
 - [Stack recommendation](docs/stack.md): Rust + iced, alternatives and integration risks.
 - [Implementation plan](docs/plan.md): ordered milestones and acceptance checks.

@@ -9,6 +9,7 @@ pub mod service;
 pub mod settings_categories;
 pub mod startup;
 pub mod steamvr;
+pub mod wind;
 
 pub fn lock_instance(demo: bool) -> anyhow::Result<std::fs::File> {
     use anyhow::Context;

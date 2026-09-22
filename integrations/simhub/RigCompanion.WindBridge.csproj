@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>RigCompanion.WindBridge</AssemblyName>
+    <RootNamespace>RigCompanion.WindBridge</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <SimHubPath Condition="'$(SimHubPath)' == ''">C:\Program Files (x86)\SimHub</SimHubPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WindBridge.cs" />
+    <Reference Include="SimHub.Plugins"><HintPath>$(SimHubPath)\SimHub.Plugins.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GameReaderCommon"><HintPath>$(SimHubPath)\GameReaderCommon.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

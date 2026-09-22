@@ -33,6 +33,8 @@ pub struct App {
     local_message: Option<String>,
     eye_page: bool,
     settings_page: bool,
+    wind_page: bool,
+    wind: crate::wind_ui::State,
     settings: crate::settings_ui::State,
     quitting: bool,
     quit_queued: bool,
@@ -65,6 +67,8 @@ pub enum Message {
     Passthrough,
     EyePage(bool),
     SettingsPage,
+    WindPage,
+    Wind(crate::wind_ui::Message),
     DriverSettings(crate::settings_ui::Message),
     Focused(bool),
     KeepEyesLive(bool),
@@ -90,7 +94,7 @@ pub enum Message {
 }
 
 impl App {
-    pub fn new(worker: Worker, lock: std::fs::File) -> Self {
+    pub fn new(worker: Worker, lock: std::fs::File, wind_page: bool) -> Self {
         let state = worker.snapshot();
         let height = state
             .profile
@@ -102,6 +106,8 @@ impl App {
             Err(e) => (None, Some(e.to_string())),
         };
         Self {
+            wind: crate::wind_ui::State::new(state.demo),
+            wind_page,
             quit_signal: rig_companion::ipc::QuitSignal::create(state.demo).ok(),
             worker,
             state,
@@ -144,6 +150,12 @@ impl App {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::WindPage => {
+                self.wind_page = true;
+                self.eye_page = false;
+                self.settings_page = false;
+            }
+            Message::Wind(message) => return self.wind.update(message).map(Message::Wind),
             Message::Launch(game) => {
                 if self.launch_busy
                     || self.quitting
@@ -202,6 +214,7 @@ impl App {
                     self.pending = None;
                     self.hotkeys = None;
                     self.worker.begin_shutdown();
+                    self.wind.suspend();
                     if self.state.demo {
                         return iced::exit();
                     }
@@ -224,6 +237,7 @@ impl App {
                 }
             },
             Message::SettingsPage => {
+                self.wind_page = false;
                 self.eye_page = false;
                 self.settings_page = true;
                 if !self.settings.loaded() {
@@ -263,6 +277,7 @@ impl App {
                 self.calibration_status = status;
             }
             Message::EyePage(value) => {
+                self.wind_page = false;
                 self.settings_page = false;
                 self.eye_page = value;
                 self.eye_reading = None;
@@ -387,6 +402,7 @@ impl App {
             }
             Message::Dashboard => self.dispatch(Command::Dashboard),
             Message::Passthrough => {
+                self.wind_page = false;
                 self.settings_page = false;
                 self.eye_page = false;
                 self.dispatch(Command::Passthrough);
@@ -440,6 +456,8 @@ impl App {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let mut subscriptions = vec![
+            iced::time::every(Duration::from_secs(1))
+                .map(|_| Message::Wind(crate::wind_ui::Message::Tick)),
             iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick),
             iced::event::listen_with(|event, _, _| match event {
                 iced::Event::Window(iced::window::Event::CloseRequested) => Some(Message::Quit),
@@ -472,6 +490,15 @@ impl App {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
+        if self.wind_page {
+            return container(
+                column![self.navigation(), self.wind.view().map(Message::Wind)].spacing(20),
+            )
+            .padding(24)
+            .height(Fill)
+            .width(Fill)
+            .into();
+        }
         if self.settings_page {
             return container(
                 column![
@@ -812,6 +839,9 @@ impl App {
                     .style(secondary),
                 button("Driver settings")
                     .on_press(Message::SettingsPage)
+                    .style(secondary),
+                button("Wind simulator")
+                    .on_press(Message::WindPage)
                     .style(secondary),
                 Space::new().width(Fill),
                 button(if self.quitting {

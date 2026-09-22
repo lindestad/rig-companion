@@ -50,7 +50,7 @@ pub struct Settings {
     pub maximum: u16,
     pub fallback_top_speed_kmh: u16,
     pub automatic_car_speed: bool,
-    pub curve_exponent: f64,
+    pub curve: crate::wind_curve::Curve,
     pub port: Option<String>,
     pub left_enabled: bool,
     pub right_enabled: bool,
@@ -58,14 +58,14 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            version: 2,
+            version: 3,
             enabled: false,
             mode: RunMode::Iracing,
             minimum: 20,
             maximum: 80,
             fallback_top_speed_kmh: 250,
             automatic_car_speed: true,
-            curve_exponent: 0.6,
+            curve: crate::wind_curve::Curve::default(),
             port: None,
             left_enabled: true,
             right_enabled: true,
@@ -74,7 +74,7 @@ impl Default for Settings {
 }
 impl Settings {
     pub fn validate(&self) -> Result<()> {
-        ensure!(self.version == 2, "Unsupported wind settings version");
+        ensure!(self.version == 3, "Unsupported wind settings version");
         ensure!(
             self.minimum <= self.maximum && self.maximum <= 100,
             "Minimum must not exceed maximum (0–100%)"
@@ -88,10 +88,7 @@ impl Settings {
             (25..=500).contains(&self.fallback_top_speed_kmh),
             "Estimated top speed must be 25–500 km/h"
         );
-        ensure!(
-            self.curve_exponent.is_finite() && (0.25..=2.0).contains(&self.curve_exponent),
-            "Curve exponent must be 0.25–2.0"
-        );
+        self.curve.validate()?;
         if let Some(port) = &self.port {
             ensure!(
                 port.strip_prefix("COM")
@@ -127,6 +124,24 @@ impl Settings {
                     obj.insert("automatic_car_speed".into(), true.into());
                     obj.insert("curve_exponent".into(), 0.6.into());
                 }
+                if raw["version"] == 2 {
+                    let obj = raw
+                        .as_object_mut()
+                        .context("Wind settings must be an object")?;
+                    let exponent = obj
+                        .remove("curve_exponent")
+                        .and_then(|v| v.as_f64())
+                        .context("Missing old curve exponent")?;
+                    ensure!(
+                        exponent.is_finite() && (0.25..=2.0).contains(&exponent),
+                        "Invalid old curve exponent"
+                    );
+                    obj.insert("version".into(), 3.into());
+                    obj.insert(
+                        "curve".into(),
+                        serde_json::to_value(crate::wind_curve::Curve::from_exponent(exponent))?,
+                    );
+                }
                 let value: Self = serde_json::from_value(raw)?;
                 value.validate()?;
                 Ok(value)
@@ -161,8 +176,7 @@ impl Settings {
         let fraction = speed.filter(|v| v.is_finite()).unwrap_or(0.0).max(0.0)
             / f64::from(top_speed_kmh.saturating_sub(15).max(10));
         let value = ((f64::from(self.minimum)
-            + fraction.clamp(0.0, 1.0).powf(self.curve_exponent)
-                * f64::from(self.maximum - self.minimum))
+            + self.curve.sample(fraction) * f64::from(self.maximum - self.minimum))
             * 10.0)
             .round() as u16;
         let value = if value < 50 { 0 } else { value };
@@ -644,7 +658,7 @@ mod tests {
             ..Settings::default()
         };
         for exponent in [0.25, 0.6, 1.0, 2.0] {
-            settings.curve_exponent = exponent;
+            settings.curve = crate::wind_curve::Curve::from_exponent(exponent);
             for top in [165, 200, 285, 380] {
                 let mut previous = 0;
                 for speed in 0..=600 {
@@ -659,9 +673,9 @@ mod tests {
                 }
             }
         }
-        settings.curve_exponent = 0.6;
+        settings.curve = crate::wind_curve::Curve::from_exponent(0.6);
         let curved = settings.demand_with_top_speed(false, false, Some(67.5), 285)[0];
-        settings.curve_exponent = 1.0;
+        settings.curve = crate::wind_curve::Preset::Linear.curve();
         assert!(curved > settings.demand_with_top_speed(false, false, Some(67.5), 285)[0]);
         settings.minimum = 0;
         assert_eq!(
@@ -678,10 +692,10 @@ mod tests {
         let settings = Settings::load(&path).unwrap();
         assert_eq!(
             (settings.version, settings.minimum, settings.maximum),
-            (2, 35, 80)
+            (3, 35, 80)
         );
         assert!(settings.automatic_car_speed && !settings.left_enabled && settings.right_enabled);
-        assert_eq!(settings.curve_exponent, 0.6);
+        assert_eq!(settings.curve, crate::wind_curve::Curve::from_exponent(0.6));
         assert_eq!(fs::read(path).unwrap(), old);
     }
     #[test]
@@ -711,10 +725,40 @@ mod tests {
         assert_eq!(snapshot.requested(&settings), [200, 200]);
     }
     #[test]
+    fn migrates_v2_curve_and_round_trips_edited_points() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("wind.json");
+        let old=br#"{"version":2,"enabled":true,"mode":"Always","minimum":35,"maximum":80,"fallback_top_speed_kmh":300,"automatic_car_speed":false,"curve_exponent":0.6,"port":"COM4","left_enabled":false,"right_enabled":true}"#;
+        fs::write(&path, old).unwrap();
+        let mut s = Settings::load(&path).unwrap();
+        assert_eq!(s.version, 3);
+        assert_eq!(
+            (s.minimum, s.maximum, s.fallback_top_speed_kmh),
+            (35, 80, 300)
+        );
+        assert!(!s.automatic_car_speed && !s.left_enabled && s.right_enabled);
+        assert_eq!(fs::read(&path).unwrap(), old);
+        // At ordinary driving speeds the migrated curve closely follows the previous curve.
+        for i in 3..=100 {
+            let x = i as f64 / 100.;
+            assert!((s.curve.sample(x) - x.powf(0.6)).abs() < 0.015);
+        }
+        let i = s.curve.insert(0.52, 0.456789123456).unwrap();
+        s.curve.move_point(i, 0.543210987654);
+        s.curve.smoothing = 0.35;
+        s.save(&path).unwrap();
+        assert_eq!(Settings::load(&path).unwrap(), s);
+        for i in 0..=100 {
+            let x = i as f64 / 100.;
+            let expected = ((35. + 45. * s.curve.sample(x)) * 10.).round() as u16;
+            assert_eq!(s.demand(false, false, Some(x * 285.)), [0, expected]);
+        }
+    }
+    #[test]
     fn mode_gates_minimum_and_speed_bounds() {
         let mut s = Settings {
             enabled: true,
-            curve_exponent: 1.0,
+            curve: crate::wind_curve::Preset::Linear.curve(),
             fallback_top_speed_kmh: 195,
             ..Settings::default()
         };

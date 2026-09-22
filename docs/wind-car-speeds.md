@@ -3,18 +3,34 @@
 Wind mapping lives in Rig Companion, not controller firmware. No firmware flash is
 needed to change a curve, add cars or revise speed estimates.
 
-The default curve is:
+The curve maps normalized speed to a fraction of the selected fan range:
 
 ```
 full_speed = max(10, estimated_car_top_speed_kmh - 15)
 x = clamp(vehicle_speed_kmh / full_speed, 0, 1)
-fan_percent = minimum + (maximum - minimum) * x^curve_exponent
+fan_percent = minimum + (maximum - minimum) * curve(x)
 ```
 
-The default exponent is **0.60**. At 25%, 50% and 75% of the speed range, it uses
-approximately 44%, 66% and 84% of the available fan-demand range. Exponent 1.00
-is linear; lower values boost low speeds; values above 1.00 soften them. The UI
-supports 0.25–2.00, shows a live draft graph and applies changes only on Save/Apply.
+The **Balanced** preset approximates the previous exponent 0.60 response. Presets
+also include **Linear**, **Early boost**, **Gentle** and **S-curve**. Choosing a preset
+replaces the draft points and smoothing, leaving run mode, min/max and car settings alone.
+
+Click empty graph space to add a point at that speed/output; drag an interior point
+up or down to change output without shifting its speed. **Add point** inserts at the
+middle of the largest speed gap, initially on the curve. **Remove selected** removes
+an interior point. The two endpoints stay at minimum and maximum. There can be 2–16
+points, separated by at least 1% of the speed range. Point speeds scale with the
+active car's threshold. Selection shows the corresponding km/h and actual fan percent.
+
+**Smoothing** blends straight piecewise-linear segments (0%) with a shape-preserving
+cubic Hermite interpolant (100%). Interior tangents use the weighted harmonic mean
+of neighboring secants, with zero tangents at plateaus/turns; endpoint tangents use
+the endpoint secant. It passes through every control point, with output bounded by
+each segment's endpoints. This rounds the graph; it is not a time-delay filter.
+Increasing points remain increasing, while deliberate dips are allowed. All presets
+are monotonic. Both graph and controller use the same sampling function.
+
+All edits are drafts and affect running fans only after **Apply changes**.
 The graph is a commanded PWM curve, not a calibrated measurement of air velocity.
 The maximum setting remains an absolute cap. An 80% maximum still means 80% fan
 demand at/above the car's threshold. Equal minimum/maximum produces constant airflow.
@@ -67,13 +83,21 @@ The 15 km/h margin still applies. No automatic learning from an out-lap or repla
 ## Upgrade and validation
 
 Upgrade both Rig Companion and the SimHub bridge DLL together (v1 heartbeats lack
-identity and are rejected by the new receiver). Existing v1 saved settings migrate
-in memory to v2, retaining enable/run mode, limits, ports and channel selection.
+identity and are rejected by the new receiver). The point editor requires no further
+bridge or firmware update. Existing v1/v2 saved settings migrate in memory to v3,
+retaining enable/run mode, limits, ports and channel selection.
 The default 180 km/h threshold becomes a 250 km/h fallback estimate; a customized
 old threshold is converted to an approximate top speed by adding 15 km/h. The file
-is not rewritten until the user applies settings. Invalid/future settings remain protected.
+is not rewritten until the user applies settings. The former exponent curve is
+sampled into eight editable points with full smoothing; this is a close approximation,
+not an exact exponent function, particularly near zero speed. Invalid/future settings
+remain protected. Point coordinates and smoothing round-trip through JSON without
+floating-point drift.
 
 Unit tests exercise monotonicity, limits, the 15 km/h margin, car changes, malformed
-frames, stale data, settings migration, run gates and catalog coverage. A synthetic
+frames, stale data, settings migration, run gates and catalog coverage. Editor tests
+cover click-to-add, vertical dragging, clamping, fixed endpoints and release outside
+the canvas. Curve tests cover presets, smoothing, peaks/plateaus without overshoot,
+point count/spacing, invalid saved data and custom-curve persistence. A synthetic
 SDK/UDP check verifies encoding; it does not establish real-game property values for
 every car. Check the displayed car and estimate on entering the next iRacing session.

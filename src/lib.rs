@@ -11,6 +11,7 @@ pub mod startup;
 pub mod steamvr;
 pub mod wind;
 pub mod wind_cars;
+pub mod wind_curve;
 
 pub fn lock_instance(demo: bool) -> anyhow::Result<std::fs::File> {
     use anyhow::Context;

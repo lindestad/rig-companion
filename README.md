@@ -69,3 +69,5 @@ The correction currently changes SteamVR's standing/floor origin, preserving the
 - [Dream Air eye-tracking research](docs/eye-tracking-research.md): live monitoring, calibration feasibility, and findings from the installed Pimax software.
 
 Project location: `~/dev/rig-companion`. Keep all project work here. Temporary upstream checkouts are ignored under `.research-seated-20260914/`.
+
+When SteamVR is off, **Start SteamVR** appears beside the connection notice on the Seated reference page. It uses the existing Pimax/runtime/driver startup checks, reports progress, then reconnects automatically. The button disappears when SteamVR is running and is disabled while startup is in progress.

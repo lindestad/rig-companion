@@ -129,6 +129,9 @@ impl State {
     pub fn suspend(&self) {
         self.worker.suspend(true);
     }
+    pub fn steamvr_running(&self) -> bool {
+        self.snapshot.steamvr
+    }
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Tick => {

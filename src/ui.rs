@@ -42,6 +42,7 @@ pub struct App {
     logo: widget::image::Handle,
     game_icons: Vec<widget::image::Handle>,
     launch_busy: bool,
+    steamvr_starting: bool,
     launch_status: String,
     launch_error: bool,
     launch_cooldown: Option<Instant>,
@@ -60,6 +61,8 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    StartSteamVr,
+    SteamVrStarted(Result<(), String>),
     Launch(rig_companion::game_launch::Game),
     LaunchDone(Result<String, String>),
     Quit,
@@ -131,6 +134,7 @@ impl App {
                 include_bytes!("../assets/game-icons/lmu.rgba").as_slice(),
             ].into_iter().map(|bytes| widget::image::Handle::from_rgba(64,64,bytes)).collect(),
             launch_busy: false,
+            steamvr_starting: false,
             launch_status: "SimPro + SimHub · MAIRA for iRacing".into(),
             launch_error: false,
             launch_cooldown: None,
@@ -150,6 +154,58 @@ impl App {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::StartSteamVr => {
+                if self.state.demo
+                    || self.state.connected
+                    || self.wind.steamvr_running()
+                    || self.launch_busy
+                    || self.quitting
+                    || self.quit_queued
+                {
+                    return Task::none();
+                }
+                self.launch_busy = true;
+                self.steamvr_starting = true;
+                self.launch_error = false;
+                self.local_message = None;
+                self.launch_status = "Starting SteamVR…".into();
+                let (sender, receiver) = std::sync::mpsc::channel();
+                self.launch_progress = Some(receiver);
+                self.launch_cancelled =
+                    std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let cancelled = self.launch_cancelled.clone();
+                return Task::perform(
+                    async move {
+                        tokio::task::spawn_blocking(move || {
+                            rig_companion::startup::run(&cancelled, |status| {
+                                let _ = sender.send(status.into());
+                            })
+                        })
+                        .await
+                        .map_err(|e| e.to_string())?
+                        .map_err(|e| format!("{e:#}"))
+                    },
+                    Message::SteamVrStarted,
+                );
+            }
+            Message::SteamVrStarted(result) => {
+                self.launch_busy = false;
+                self.steamvr_starting = false;
+                self.launch_progress = None;
+                self.launch_error = result.is_err();
+                match result {
+                    Ok(()) => {
+                        self.launch_status = "SteamVR started · connecting…".into();
+                        if !self.quitting && !self.quit_queued {
+                            self.worker.send(Command::Connect);
+                        }
+                    }
+                    Err(error) => {
+                        self.launch_status = error.clone();
+                        self.local_message = Some(error);
+                    }
+                }
+            }
             Message::WindPage => {
                 self.wind_page = true;
                 self.eye_page = false;
@@ -697,7 +753,9 @@ impl App {
             .spacing(18),
         );
 
-        let notice = if self.pending.is_some() {
+        let notice = if self.steamvr_starting {
+            &self.launch_status
+        } else if self.pending.is_some() {
             "Sit normally and look forward. Hold still until the countdown finishes."
         } else if let Some(m) = &self.local_message {
             m
@@ -766,12 +824,33 @@ impl App {
             .spacing(14)
             .align_y(alignment::Vertical::Center);
 
+        let mut notice_row = row![text(notice).size(14).color(notice_color).width(Fill)]
+            .spacing(14)
+            .align_y(alignment::Vertical::Center);
+        if !self.state.demo && !self.state.connected && !self.wind.steamvr_running() {
+            notice_row = notice_row.push(
+                button(
+                    text(if self.steamvr_starting {
+                        "Starting…"
+                    } else {
+                        "Start SteamVR"
+                    })
+                    .size(14),
+                )
+                .on_press_maybe(
+                    (!self.launch_busy && !self.quitting && !self.quit_queued)
+                        .then_some(Message::StartSteamVr),
+                )
+                .padding([8, 12])
+                .style(secondary),
+            );
+        }
         let content = column![
             self.navigation(),
             header,
             self.game_launchers(),
             self.compact_eyes(),
-            container(text(notice).size(14).color(notice_color))
+            container(notice_row)
                 .padding([10, 14])
                 .width(Fill)
                 .style(|_| box_style(INNER)),

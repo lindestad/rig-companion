@@ -1,0 +1,714 @@
+{
+  "source": "https://support.iracing.com/support/solutions/articles/31000172625-filepath-for-active-iracing-cars",
+  "retrieved": "2026-09-22",
+  "cars": [
+    {
+      "name": "Acura ARX-06 GTP",
+      "path": "\\acuraarx06gtp"
+    },
+    {
+      "name": "Acura NSX GT3 EVO 22",
+      "path": "\\acuransxevo22gt3"
+    },
+    {
+      "name": "ARCA Chevrolet SS",
+      "path": "\\stockcars2\\arcachevy25"
+    },
+    {
+      "name": "ARCA Ford Mustang",
+      "path": "\\stockcars2\\arcaford25"
+    },
+    {
+      "name": "ARCA Toyota Camry",
+      "path": "\\stockcars2\\arcatoyota25"
+    },
+    {
+      "name": "Aston Martin DBR9 GT1",
+      "path": "\\astonmartin\\dbr9"
+    },
+    {
+      "name": "Aston Martin Vantage GT3 EVO",
+      "path": "\\amvantageevogt3"
+    },
+    {
+      "name": "Aston Martin Vantage GT4",
+      "path": "\\amvantagegt4"
+    },
+    {
+      "name": "Audi 90 GTO",
+      "path": "\\audi90gto"
+    },
+    {
+      "name": "Audi R18",
+      "path": "\\audir18"
+    },
+    {
+      "name": "Audi R8 LMS EVO II GT3",
+      "path": "\\audir8lmsevo2gt3"
+    },
+    {
+      "name": "Audi RS3 LMS TCR",
+      "path": "\\audirs3lms"
+    },
+    {
+      "name": "BMW M Hybrid V8",
+      "path": "\\bmwlmdh"
+    },
+    {
+      "name": "BMW M2 CSR",
+      "path": "\\bmwrn2csr"
+    },
+    {
+      "name": "BMW M4 GT3",
+      "path": "\\bmwm4gt3"
+    },
+    {
+      "name": "BMW M4 G82 GT4",
+      "path": "\\bmwm4evogt4"
+    },
+    {
+      "name": "BMW M4 F82 GT4 - 2018",
+      "path": "\\bmwm4gt4"
+    },
+    {
+      "name": "BMW M8 GTE",
+      "path": "\\bmwm8gte"
+    },
+    {
+      "name": "Cadillac CTS-V Racecar",
+      "path": "\\cadillacctsvr"
+    },
+    {
+      "name": "Cadillac V-Series.R GTP",
+      "path": "\\cadillacvseriesgtp"
+    },
+    {
+      "name": "Chevrolet Corvette C6.R GT1",
+      "path": "\\c6r"
+    },
+    {
+      "name": "Chevrolet Corvette C7 Daytona Prototype",
+      "path": "\\c7vettedp"
+    },
+    {
+      "name": "Chevrolet Corvette C8.R GTE",
+      "path": "\\c8rvettegte"
+    },
+    {
+      "name": "Chevrolet Corvette Z06 GT3.R",
+      "path": "\\chevyvettez06rgt3"
+    },
+    {
+      "name": "Dallara F3",
+      "path": "\\dallaraf3"
+    },
+    {
+      "name": "Dallara IL-15 (INDY NXT)",
+      "path": "\\dallarail15"
+    },
+    {
+      "name": "Dallara iR-01",
+      "path": "\\dallarair01"
+    },
+    {
+      "name": "Dallara IR18",
+      "path": "\\dallarair18"
+    },
+    {
+      "name": "Dallara P217",
+      "path": "\\dallarap217"
+    },
+    {
+      "name": "Dirt Big Block Modified",
+      "path": "\\dirtmodified\\bigblock"
+    },
+    {
+      "name": "Dirt 358 Modified",
+      "path": "\\dirtmodified\\358"
+    },
+    {
+      "name": "Limited Dirt Late Model",
+      "path": "\\dirtlatemodel\\350"
+    },
+    {
+      "name": "Pro Dirt Late Model",
+      "path": "\\dirtlatemodel\\358"
+    },
+    {
+      "name": "Super Dirt Late Model",
+      "path": "\\dirtlatemodel\\438"
+    },
+    {
+      "name": "Dirt Micro Sprint Car - Winged",
+      "path": "\\dirtmicrosprint\\winged"
+    },
+    {
+      "name": "Dirt Micro Sprint Car - Non-Winged",
+      "path": "\\dirtmicrosprint\\nonwinged"
+    },
+    {
+      "name": "Dirt Midget",
+      "path": "\\dirtmidget"
+    },
+    {
+      "name": "Dirt Mini Stock",
+      "path": "\\dirtministock"
+    },
+    {
+      "name": "Dirt Sprint Car - 305",
+      "path": "\\dirtsprint\\winged\\305"
+    },
+    {
+      "name": "Dirt Sprint Car - 360",
+      "path": "\\dirtsprint\\winged\\360"
+    },
+    {
+      "name": "Dirt Sprint Car - 410",
+      "path": "\\dirtsprint\\winged\\410"
+    },
+    {
+      "name": "Dirt Sprint Car Non-Winged - 360",
+      "path": "\\dirtsprint\\nonwinged\\360"
+    },
+    {
+      "name": "Dirt Sprint Car Non-Winged - 410",
+      "path": "\\dirtsprint\\nonwinged\\410"
+    },
+    {
+      "name": "Dirt Street Stock",
+      "path": "\\dirtstreetstock"
+    },
+    {
+      "name": "Dirt UMP Modified",
+      "path": "\\dirtumpmod"
+    },
+    {
+      "name": "Ferrari 296 Challenge",
+      "path": "\\ferrari296challenge"
+    },
+    {
+      "name": "Ferrari 296 GT3",
+      "path": "\\ferrari296gt3"
+    },
+    {
+      "name": "Ferrari 488 GT3 Evo 2020",
+      "path": "\\ferrarievogt3"
+    },
+    {
+      "name": "Ferrari 499P",
+      "path": "\\ferrari499p"
+    },
+    {
+      "name": "Ferrari 488 GTE",
+      "path": "\\ferrari488gte"
+    },
+    {
+      "name": "FIA Cross Car",
+      "path": "\\crosscartn11"
+    },
+    {
+      "name": "FIA F4",
+      "path": "\\formulair04"
+    },
+    {
+      "name": "Ford Fiesta RS WRC",
+      "path": "\\fordfiestarswrc"
+    },
+    {
+      "name": "Ford GTE",
+      "path": "\\fordgt2017"
+    },
+    {
+      "name": "Ford GT GT2",
+      "path": "\\fordgt"
+    },
+    {
+      "name": "Ford GT GT3",
+      "path": "\\fordgt\\gt3"
+    },
+    {
+      "name": "Ford Mustang FR500S",
+      "path": "\\fr500s"
+    },
+    {
+      "name": "Ford Mustang GT3",
+      "path": "\\fordmustanggt3"
+    },
+    {
+      "name": "Ford Mustang GT4",
+      "path": "\\fordmustanggt4"
+    },
+    {
+      "name": "Formula Renault 2.0",
+      "path": "\\formularenault20"
+    },
+    {
+      "name": "Formula Renault 3.5",
+      "path": "\\formularenault35"
+    },
+    {
+      "name": "Formula Vee",
+      "path": "\\formulavee"
+    },
+    {
+      "name": "Global Mazda MX-5 Cup",
+      "path": "\\mx5\\mx52016"
+    },
+    {
+      "name": "Honda Civic Type R TCR",
+      "path": "\\hondacivictyper"
+    },
+    {
+      "name": "HPD ARX-01c",
+      "path": "\\hpdarx01c"
+    },
+    {
+      "name": "Hyundai Elantra N TCR",
+      "path": "\\hyundaielantracn7"
+    },
+    {
+      "name": "Hyundai Veloster N TCR",
+      "path": "\\hyundaivelostern"
+    },
+    {
+      "name": "Indy Pro 2000 PM-18",
+      "path": "\\indypropm18"
+    },
+    {
+      "name": "Kia Optima",
+      "path": "\\kiaoptima"
+    },
+    {
+      "name": "Lamborghini Huracán GT3 EVO",
+      "path": "\\lamborghinievogt3"
+    },
+    {
+      "name": "Late Model Stock",
+      "path": "\\latemodel2023"
+    },
+    {
+      "name": "Legends Ford '34 Coupe",
+      "path": "\\legends\\ford34c"
+    },
+    {
+      "name": "Legends Ford '34 Coupe - Rookie",
+      "path": "\\legends\\ford34c\\rookie"
+    },
+    {
+      "name": "Ligier JS P320",
+      "path": "\\ligierjsp320"
+    },
+    {
+      "name": "Lotus 49",
+      "path": "\\lotus49"
+    },
+    {
+      "name": "Lotus 79",
+      "path": "\\lotus79"
+    },
+    {
+      "name": "Lucas Oil Off Road Pro 2 Lite",
+      "path": "\\protrucks\\pro2lite"
+    },
+    {
+      "name": "Lucas Oil Off Road Pro 2 Truck",
+      "path": "\\protrucks\\pro2truck"
+    },
+    {
+      "name": "Lucas Oil Off Road Pro 4 Truck",
+      "path": "\\protrucks\\pro4truck"
+    },
+    {
+      "name": "McLaren 570S GT4",
+      "path": "\\mclaren570sgt4"
+    },
+    {
+      "name": "McLaren 720S GT3 EVO",
+      "path": "\\mclaren720sgt3"
+    },
+    {
+      "name": "McLaren MP4-12C GT3",
+      "path": "\\mclarenmp4"
+    },
+    {
+      "name": "McLaren MP4-30",
+      "path": "\\mclarenmp430"
+    },
+    {
+      "name": "Mercedes-AMG GT3 2020",
+      "path": "\\mercedesamgevogt3"
+    },
+    {
+      "name": "Mercedes-AMG GT4",
+      "path": "\\mercedesamggt4"
+    },
+    {
+      "name": "Mercedes-AMG W12 E Performance",
+      "path": "\\mercedesw12"
+    },
+    {
+      "name": "Mercedes-AMG W13 E Performance",
+      "path": "\\mercedesw13"
+    },
+    {
+      "name": "Mini Stock",
+      "path": "\\ministock"
+    },
+    {
+      "name": "NASCAR Cup Series Chevrolet Camaro ZL1",
+      "path": "\\stockcars\\camarozl12018"
+    },
+    {
+      "name": "NASCAR Cup Series Ford Mustang",
+      "path": "\\stockcars\\fordmustang2019"
+    },
+    {
+      "name": "NASCAR Cup Series Toyota Camry",
+      "path": "\\stockcars\\toyotacamry"
+    },
+    {
+      "name": "NASCAR Cup Series Next Gen Chevrolet Camaro ZL1",
+      "path": "\\stockcars\\camarozl12022"
+    },
+    {
+      "name": "NASCAR Cup Series Next Gen Ford Mustang",
+      "path": "\\stockcars\\fordmustang2022"
+    },
+    {
+      "name": "NASCAR Cup Series Next Gen Toyota Camry",
+      "path": "\\stockcars\\toyotacamry2022"
+    },
+    {
+      "name": "NASCAR Gen 4 Chevrolet Monte Carlo - 2003",
+      "path": "\\stockcars\\chevymontecarlo03"
+    },
+    {
+      "name": "NASCAR Gen 4 Ford Taurus - 2003",
+      "path": "\\stockcars\\fordtaurus03"
+    },
+    {
+      "name": "NASCAR Legends Buick LeSabre - 1987",
+      "path": "\\stockcars\\buicklesabre87"
+    },
+    {
+      "name": "NASCAR Legends Chevrolet Monte Carlo - 1987",
+      "path": "\\stockcars\\chevymontecarlo87"
+    },
+    {
+      "name": "NASCAR Legends Ford Thunderbird - 1987",
+      "path": "\\stockcars\\fordthunderbird87"
+    },
+    {
+      "name": "NASCAR Legends Pontiac Grand Prix - 1987",
+      "path": "\\stockcars\\pontiacgrandprix87"
+    },
+    {
+      "name": "NASCAR Truck Chevrolet Silverado",
+      "path": "\\trucks\\silverado2019"
+    },
+    {
+      "name": "NASCAR Truck Ford F150",
+      "path": "\\trucks\\fordf150"
+    },
+    {
+      "name": "NASCAR Truck Toyota Tundra TRD Pro",
+      "path": "\\trucks\\toyotatundra2022"
+    },
+    {
+      "name": "NASCAR Whelen Tour Modified",
+      "path": "\\skmodified\\tour"
+    },
+    {
+      "name": "Modified - SK",
+      "path": "\\skmodified"
+    },
+    {
+      "name": "NASCAR Xfinity Chevrolet Camaro",
+      "path": "\\stockcars2\\camaro2019"
+    },
+    {
+      "name": "NASCAR Xfinity Ford Mustang",
+      "path": "\\stockcars2\\mustang2019"
+    },
+    {
+      "name": "NASCAR Xfinity Toyota Supra",
+      "path": "\\stockcars2\\supra2019"
+    },
+    {
+      "name": "Nissan GTP ZXT",
+      "path": "\\nissangtpzxt"
+    },
+    {
+      "name": "Pontiac Solstice",
+      "path": "\\solstice"
+    },
+    {
+      "name": "Pontiac Solstice - Rookie",
+      "path": "\\solstice\\rookie"
+    },
+    {
+      "name": "Porsche 718 Cayman GT4 Clubsport MR",
+      "path": "\\porsche718gt4"
+    },
+    {
+      "name": "Porsche 911 Cup (992.2)",
+      "path": "\\porsche9922cup"
+    },
+    {
+      "name": "Porsche 911 GT3 R (992)",
+      "path": "\\porsche992rgt3"
+    },
+    {
+      "name": "Porsche 911 RSR",
+      "path": "\\porsche991rsr"
+    },
+    {
+      "name": "Porsche 919",
+      "path": "\\porsche919"
+    },
+    {
+      "name": "Porsche 963 GTP",
+      "path": "\\porsche963gtp"
+    },
+    {
+      "name": "Porsche Mission R",
+      "path": "\\porschemissionr"
+    },
+    {
+      "name": "Radical SR8",
+      "path": "\\radical\\sr8"
+    },
+    {
+      "name": "Radical SR10",
+      "path": "\\radical\\radicalsr10"
+    },
+    {
+      "name": "Ray FF1600",
+      "path": "\\raygr22"
+    },
+    {
+      "name": "Renault Clio",
+      "path": "\\renaultcliocup"
+    },
+    {
+      "name": "Ruf RT 12R AWD",
+      "path": "\\rufrt12r\\awd"
+    },
+    {
+      "name": "Ruf RT 12R C-Spec",
+      "path": "\\rufrt12r\\track\\cspec"
+    },
+    {
+      "name": "Ruf RT 12R RWD",
+      "path": "\\rufrt12r\\rwd"
+    },
+    {
+      "name": "Ruf RT 12R Track",
+      "path": "\\rufrt12r\\track"
+    },
+    {
+      "name": "SCCA Spec Racer Ford",
+      "path": "\\specracer"
+    },
+    {
+      "name": "Silver Crown",
+      "path": "\\silvercrown"
+    },
+    {
+      "name": "Skip Barber Formula 2000",
+      "path": "\\rt2000"
+    },
+    {
+      "name": "Sprint Car",
+      "path": "\\sprint"
+    },
+    {
+      "name": "Stock Car Pro Series Chevrolet Cruze",
+      "path": "\\stockcarbrasil\\cruze"
+    },
+    {
+      "name": "Stock Car Pro Series Toyota Corolla",
+      "path": "\\stockcarbrasil\\corolla"
+    },
+    {
+      "name": "Street Stock",
+      "path": "\\streetstock"
+    },
+    {
+      "name": "Street Stock - Casino",
+      "path": "\\streetstock\\streetstock2"
+    },
+    {
+      "name": "Street Stock - Eagle",
+      "path": "\\streetstock\\streetstock3"
+    },
+    {
+      "name": "Subaru WRX STI",
+      "path": "\\subaruwrxsti"
+    },
+    {
+      "name": "Supercars Ford Mustang Gen 3",
+      "path": "\\supercars\\fordmustanggen3"
+    },
+    {
+      "name": "Supercars Ford Mustang GT",
+      "path": "\\v8supercars\\fordmustanggt"
+    },
+    {
+      "name": "Super Formula SF23 - Toyota",
+      "path": "\\superformulasf23\\toyota"
+    },
+    {
+      "name": "Super Formula SF23 - Honda",
+      "path": "\\superformulasf23\\honda"
+    },
+    {
+      "name": "Super Late Model",
+      "path": "\\superlatemodel"
+    },
+    {
+      "name": "Supercars Ford Mustang GT",
+      "path": "\\v8supercars\\fordmustanggt"
+    },
+    {
+      "name": "Supercars Holden ZB Commodore",
+      "path": "\\v8supercars\\holden2019"
+    },
+    {
+      "name": "Super Formula Lights",
+      "path": "\\superformulalights324"
+    },
+    {
+      "name": "Toyota GR86",
+      "path": "\\toyotagr86"
+    },
+    {
+      "name": "USF 2000",
+      "path": "\\usf2000usf17"
+    },
+    {
+      "name": "VW Beetle",
+      "path": "\\vwbeetlegrc"
+    },
+    {
+      "name": "VW Beetle Lite",
+      "path": "\\vwbeetlegrc\\lite"
+    },
+    {
+      "name": "VW Jetta TDI Cup",
+      "path": "\\jettatdi"
+    },
+    {
+      "name": "Williams FW31",
+      "path": "\\williamsfw31"
+    },
+    {
+      "name": "[Legacy] ARCA Menards Chevrolet Impala",
+      "path": "\\stockcars2\\chevy"
+    },
+    {
+      "name": "[Legacy] Gen 4 Cup",
+      "path": "\\stockcars2\\chevy\\gen4cup"
+    },
+    {
+      "name": "[Legacy] Audi R8 LMS GT3",
+      "path": "\\audir8gt3"
+    },
+    {
+      "name": "[Legacy] BMW Z4 GT3",
+      "path": "\\bmwz4gt3"
+    },
+    {
+      "name": "[Legacy] Dallara DW12",
+      "path": "\\dallaradw12"
+    },
+    {
+      "name": "[Legacy] Dallara IR-05",
+      "path": "\\dallara"
+    },
+    {
+      "name": "[Legacy] Ferrari 488 GT3",
+      "path": "\\ferrari488gt3"
+    },
+    {
+      "name": "[Legacy] Mazda MX-5 Cup - 2010",
+      "path": "\\mx5\\cup"
+    },
+    {
+      "name": "[Legacy] Mazda MX-5 Roadster - 2010",
+      "path": "\\mx5\\roadster"
+    },
+    {
+      "name": "[Legacy] Mercedes-AMG GT3",
+      "path": "\\mercedesamggt3"
+    },
+    {
+      "name": "[Legacy] McLaren MP4-12C GT3",
+      "path": "\\mclarenmp4"
+    },
+    {
+      "name": "[Legacy] NASCAR Cup Chevrolet Impala COT - 2009",
+      "path": "\\stockcars\\impala"
+    },
+    {
+      "name": "[Legacy] NASCAR Cup Chevrolet SS - 2013",
+      "path": "\\stockcars\\chevyss"
+    },
+    {
+      "name": "[Legacy] NASCAR Cup Ford Fusion - 2016",
+      "path": "\\stockcars\\fordfusion"
+    },
+    {
+      "name": "[Legacy] NASCAR Nationwide Chevrolet Impala - 2012",
+      "path": "\\stockcars2\\chevy\\cot"
+    },
+    {
+      "name": "[Legacy] NASCAR Truck Chevrolet Silverado - 2008",
+      "path": "\\trucks\\silverado"
+    },
+    {
+      "name": "[Legacy] NASCAR Xfinity Chevrolet Camaro - 2014",
+      "path": "\\stockcars2\\nwcamaro2014"
+    },
+    {
+      "name": "[Legacy] NASCAR Xfinity Ford Mustang - 2016",
+      "path": "\\stockcars2\\nwford2013"
+    },
+    {
+      "name": "[Legacy] NASCAR Xfinity Toyota Camry - 2015",
+      "path": "\\stockcars2\\camry2015"
+    },
+    {
+      "name": "[Legacy] Porsche 911 GT3 Cup (991)",
+      "path": "\\porsche911cup"
+    },
+    {
+      "name": "[Legacy] Porsche 911 GT3 Cup (992.1)",
+      "path": "\\porsche992cup"
+    },
+    {
+      "name": "[Legacy] Porsche 911 GT3 R",
+      "path": "\\porsche911rgt3"
+    },
+    {
+      "name": "[Legacy] Pro Mazda",
+      "path": "\\formulamazda"
+    },
+    {
+      "name": "[Legacy] Riley MkXX Daytona Prototype - 2008",
+      "path": "\\rileydp"
+    },
+    {
+      "name": "[Legacy] V8 Supercar Ford Falcon - 2009",
+      "path": "\\fordv8sc"
+    },
+    {
+      "name": "[Legacy] V8 Supercar Ford FG Falcon - 2014",
+      "path": "\\v8supercars\\ford2014"
+    },
+    {
+      "name": "[Legacy] V8 Supercar Holden VF Commodore - 2014",
+      "path": "\\v8supercars\\holden2014"
+    }
+  ]
+}

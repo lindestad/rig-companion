@@ -2,7 +2,7 @@
 
 The **Wind simulator** page controls the LINDESTAD WindPCB B.3 over native USB. SimHub forwards normalized vehicle speed to Rig Companion using the included **Rig Companion Wind Bridge** plugin. Rig Companion is the only owner of the COM port; do not configure a SimHub Custom Serial Device for this board. No virtual COM driver is needed.
 
-Enable wind, choose a run mode, set minimum/maximum PWM percentages and the vehicle speed that reaches maximum, then **Apply changes**. Speed maps linearly between the two limits. **Stop now** disables wind immediately and saves the disabled setting. Settings are drafts until applied; moving a slider alone does not change the running fans. A brief 100% startup kick is implemented by the firmware and can exceed the steady-state maximum.
+Enable wind, choose a run mode, set minimum/maximum PWM percentages and the curve shape, then **Apply changes**. Speed follows an editable power curve (default exponent 0.60). The active iRacing car selects an approximate top speed; maximum fan demand is reached 15 km/h below that estimate. The page shows the car, estimate, source category and draft curve graph. Unknown cars use the editable fallback; manual mode overrides the automatic estimate. See [car estimates and curve](wind-car-speeds.md). **Stop now** disables wind immediately and saves the disabled setting. Settings are drafts until applied; moving a slider alone does not change the running fans. A brief 100% startup kick is implemented by the firmware and can exceed the steady-state maximum.
 
 - **Always (minimum when idle):** minimum airflow whenever Rig Companion is open; fresh SimHub game speed increases it up to maximum.
 - **While SteamVR is running:** the same behavior while `vrserver.exe` is running. This checks runtime availability, not whether the headset is being worn.
@@ -20,7 +20,7 @@ The page shows per-header RPM, missing-tach warnings, requested output, controll
 
 The board has no supply voltage/current/temperature ADC. The eFuse fault line drives the red LED but is not wired to an MCU input. The UI therefore does not invent voltage readings or classify hardware power faults. USB telemetry is controller state, not proof of measured power-rail behavior.
 
-Firmware source: `C:\Users\danie\dev\wind-controller`. Its version-1 command stays `W,<left>,<right>\n` with integer 0–1000 demands. Basic `S,1,<mode>,<mask>\n` reports continue at 500 ms. Extended reports arrive about every second:
+Firmware and PCB source: [lindestad/wind-controller](https://github.com/lindestad/wind-controller). Its version-1 command stays `W,<left>,<right>\n` with integer 0–1000 demands. Basic `S,1,<mode>,<mask>\n` reports continue at 500 ms. Extended reports arrive about every second:
 
 ```text
 T,2,mode,warning_hex,uptime_ms,accepted,rejected,rpm_L1,rpm_L2,rpm_R1,rpm_R2,pwm_L1,pwm_L2,pwm_R1,pwm_R2\n
@@ -41,15 +41,17 @@ Start SimHub and enable **Rig Companion Wind Bridge** in the detected-plugins di
 The plugin sends a heartbeat every 100 ms to `127.0.0.1:29814`. It copies `GameData.NewData.SpeedKmh` in the normal SDK callback and does socket I/O on its own timer. Stale/no game updates produce `running:false`, speed zero. It has no network destination other than loopback and never opens a serial port. The receiver binds only loopback, validates packet shape/ranges, bounds receive work, and uses receive time for freshness. This is a local accessory interface, not an authenticated network protocol.
 
 ```json
-{"version":1,"running":true,"speed_kmh":123.4}
+{"version":2,"running":true,"speed_kmh":123.4,"game":"IRacing","car_id":"formulavee","car_model":"Formula Vee","car_class":"Formula Vee"}
 ```
 
 SDK references: [SimHub plugin SDK](https://github.com/SHWotever/SimHub/wiki/Plugin-and-extensions-SDKs), the installed `PluginSdk/User.PluginSdkDemo/DataPluginDemo.cs`, and [serialport-rs](https://github.com/serialport/serialport-rs).
 
 ## Validation
 
-33 Rust tests pass, including mode gating, speed mapping/caps, stale SimHub fallback, stale controller stop, strict protocol parsing and settings validation. Clippy passes with warnings denied. The plugin builds against the installed SimHub 9.12.4 assemblies with no warnings. The updated firmware passes 26 host tests and 43 target-build checks; flashing was hash-verified and the physical board returned valid stopped-state RPM telemetry.
+38 Rust tests pass, including mode gating, speed mapping/caps, stale SimHub fallback, stale controller stop, strict protocol parsing and settings validation. Clippy passes with warnings denied. The plugin builds against the installed SimHub 9.12.4 assemblies with no warnings. The updated firmware passes 26 host tests and 43 target-build checks; flashing was hash-verified and the physical board returned valid stopped-state RPM telemetry.
 
 With the actual SimHub plugin enabled, `cargo run --example wind_smoke` passes USB telemetry/heartbeat, disabled output, release/reconnect and shutdown checks. This test deliberately leaves fan outputs at zero and requires the GUI closed. It does not launch iRacing or prove on-track wind feel. Vehicle-speed behavior is unit-tested; a real driving session remains the user acceptance check.
 
-Settings live beside the existing profile as `wind.json` (`demo-wind.json` in demo). Missing files use disabled defaults; malformed or newer settings are preserved, reported, and cannot be overwritten from the page. Defaults are 20% minimum, 80% maximum and full wind at 180 km/h. Open this page directly with `rig-companion.exe --wind`; combine with `--no-launch` to avoid launching the VR stack.
+Settings live beside the existing profile as `wind.json` (`demo-wind.json` in demo). Missing files use disabled defaults; malformed or newer settings are preserved, reported, and cannot be overwritten from the page. Defaults are 20% minimum, 80% maximum, curve exponent 0.60, automatic car estimate and a 250 km/h fallback top speed (maximum at 235 km/h). Open this page directly with `rig-companion.exe --wind`; combine with `--no-launch` to avoid launching the VR stack.
+
+Upgrade the bridge DLL alongside Rig Companion: the new receiver requires v2 car identity fields. `scripts/test-wind-bridge.ps1` exercises actual SDK callbacks and JSON/UDP on an isolated ephemeral port using Windows PowerShell 5.1.

@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WindBridge.cs" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="SimHub.Plugins"><HintPath>$(SimHubPath)\SimHub.Plugins.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="GameReaderCommon"><HintPath>$(SimHubPath)\GameReaderCommon.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>

@@ -48,7 +48,9 @@ pub struct Settings {
     pub mode: RunMode,
     pub minimum: u16,
     pub maximum: u16,
-    pub full_speed_kmh: u16,
+    pub fallback_top_speed_kmh: u16,
+    pub automatic_car_speed: bool,
+    pub curve_exponent: f64,
     pub port: Option<String>,
     pub left_enabled: bool,
     pub right_enabled: bool,
@@ -56,12 +58,14 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            version: 1,
+            version: 2,
             enabled: false,
             mode: RunMode::Iracing,
             minimum: 20,
             maximum: 80,
-            full_speed_kmh: 180,
+            fallback_top_speed_kmh: 250,
+            automatic_car_speed: true,
+            curve_exponent: 0.6,
             port: None,
             left_enabled: true,
             right_enabled: true,
@@ -70,7 +74,7 @@ impl Default for Settings {
 }
 impl Settings {
     pub fn validate(&self) -> Result<()> {
-        ensure!(self.version == 1, "Unsupported wind settings version");
+        ensure!(self.version == 2, "Unsupported wind settings version");
         ensure!(
             self.minimum <= self.maximum && self.maximum <= 100,
             "Minimum must not exceed maximum (0–100%)"
@@ -81,8 +85,12 @@ impl Settings {
         );
         ensure!(self.maximum >= 5, "Maximum must be at least 5%");
         ensure!(
-            (10..=500).contains(&self.full_speed_kmh),
-            "Full wind speed must be 10–500 km/h"
+            (25..=500).contains(&self.fallback_top_speed_kmh),
+            "Estimated top speed must be 25–500 km/h"
+        );
+        ensure!(
+            self.curve_exponent.is_finite() && (0.25..=2.0).contains(&self.curve_exponent),
+            "Curve exponent must be 0.25–2.0"
         );
         if let Some(port) = &self.port {
             ensure!(
@@ -96,7 +104,30 @@ impl Settings {
     pub fn load(path: &Path) -> Result<Self> {
         match fs::read(path) {
             Ok(bytes) => {
-                let value: Self = serde_json::from_slice(&bytes)?;
+                let mut raw: serde_json::Value = serde_json::from_slice(&bytes)?;
+                if raw["version"] == 1 {
+                    let obj = raw
+                        .as_object_mut()
+                        .context("Wind settings must be an object")?;
+                    let full = obj
+                        .remove("full_speed_kmh")
+                        .and_then(|v| v.as_u64())
+                        .context("Missing old full speed")?;
+                    ensure!((10..=500).contains(&full), "Invalid old full speed");
+                    obj.insert("version".into(), 2.into());
+                    obj.insert(
+                        "fallback_top_speed_kmh".into(),
+                        (if full == 180 {
+                            250
+                        } else {
+                            (full + 15).min(500)
+                        })
+                        .into(),
+                    );
+                    obj.insert("automatic_car_speed".into(), true.into());
+                    obj.insert("curve_exponent".into(), 0.6.into());
+                }
+                let value: Self = serde_json::from_value(raw)?;
                 value.validate()?;
                 Ok(value)
             }
@@ -115,13 +146,23 @@ impl Settings {
         Ok(())
     }
     pub fn demand(&self, steamvr: bool, iracing: bool, speed: Option<f64>) -> [u16; 2] {
+        self.demand_with_top_speed(steamvr, iracing, speed, self.fallback_top_speed_kmh)
+    }
+    pub fn demand_with_top_speed(
+        &self,
+        steamvr: bool,
+        iracing: bool,
+        speed: Option<f64>,
+        top_speed_kmh: u16,
+    ) -> [u16; 2] {
         if !self.enabled || !self.mode.allows(steamvr, iracing) {
             return [0, 0];
         }
         let fraction = speed.filter(|v| v.is_finite()).unwrap_or(0.0).max(0.0)
-            / f64::from(self.full_speed_kmh);
+            / f64::from(top_speed_kmh.saturating_sub(15).max(10));
         let value = ((f64::from(self.minimum)
-            + fraction.clamp(0.0, 1.0) * f64::from(self.maximum - self.minimum))
+            + fraction.clamp(0.0, 1.0).powf(self.curve_exponent)
+                * f64::from(self.maximum - self.minimum))
             * 10.0)
             .round() as u16;
         let value = if value < 50 { 0 } else { value };
@@ -210,12 +251,22 @@ pub struct BridgeFrame {
     pub version: u8,
     pub running: bool,
     pub speed_kmh: f64,
+    pub game: String,
+    pub car_id: String,
+    pub car_model: String,
+    pub car_class: String,
 }
 impl BridgeFrame {
     pub fn parse(bytes: &[u8]) -> Option<Self> {
         let f: Self = serde_json::from_slice(bytes).ok()?;
-        (f.version == 1 && f.speed_kmh.is_finite() && (0.0..=1500.0).contains(&f.speed_kmh))
-            .then_some(f)
+        (f.version == 2
+            && f.speed_kmh.is_finite()
+            && (0.0..=1500.0).contains(&f.speed_kmh)
+            && f.game.len() <= 128
+            && [&f.car_id, &f.car_model, &f.car_class]
+                .iter()
+                .all(|v| v.len() <= 512 && !v.chars().any(char::is_control)))
+        .then_some(f)
     }
 }
 
@@ -229,6 +280,10 @@ pub struct Snapshot {
     pub bridge_at: Option<Instant>,
     pub bridge_running: bool,
     pub speed_kmh: f64,
+    pub game: String,
+    pub car_id: String,
+    pub car_model: String,
+    pub car_class: String,
     pub steamvr: bool,
     pub iracing: bool,
     pub demand: [u16; 2],
@@ -246,6 +301,10 @@ impl Default for Snapshot {
             bridge_at: None,
             bridge_running: false,
             speed_kmh: 0.0,
+            game: String::new(),
+            car_id: String::new(),
+            car_model: String::new(),
+            car_class: String::new(),
             steamvr: false,
             iracing: false,
             demand: [0, 0],
@@ -255,12 +314,37 @@ impl Default for Snapshot {
     }
 }
 impl Snapshot {
+    pub fn estimate(&self, settings: &Settings) -> crate::wind_cars::Estimate {
+        if !settings.automatic_car_speed {
+            return crate::wind_cars::Estimate {
+                car: self.car_model.clone(),
+                top_speed_kmh: settings.fallback_top_speed_kmh,
+                basis: "Manual estimate".into(),
+            };
+        }
+        if self.bridge_fresh() && self.bridge_running {
+            crate::wind_cars::estimate(
+                &self.game,
+                &self.car_id,
+                &self.car_model,
+                &self.car_class,
+                settings.fallback_top_speed_kmh,
+            )
+        } else {
+            crate::wind_cars::estimate("", "", "", "", settings.fallback_top_speed_kmh)
+        }
+    }
     pub fn requested(&self, settings: &Settings) -> [u16; 2] {
         if !self.fresh() || self.suspended {
             return [0, 0];
         }
         let speed = (self.bridge_fresh() && self.bridge_running).then_some(self.speed_kmh);
-        settings.demand(self.steamvr, self.iracing, speed)
+        settings.demand_with_top_speed(
+            self.steamvr,
+            self.iracing,
+            speed,
+            self.estimate(settings).top_speed_kmh,
+        )
     }
     pub fn fresh(&self) -> bool {
         self.telemetry_at
@@ -393,7 +477,7 @@ fn run(
             next_process = now + Duration::from_secs(2);
         }
         if let Some(socket) = &socket {
-            let mut buf = [0; 512];
+            let mut buf = [0; 4096];
             // Bound work if another local process floods the bridge.
             for _ in 0..16 {
                 match socket.recv_from(&mut buf) {
@@ -402,6 +486,10 @@ fn run(
                             view.bridge_at = Some(now);
                             view.bridge_running = frame.running;
                             view.speed_kmh = frame.speed_kmh;
+                            view.game = frame.game;
+                            view.car_id = frame.car_id;
+                            view.car_model = frame.car_model;
+                            view.car_class = frame.car_class;
                         }
                     }
                     _ => break,
@@ -547,9 +635,87 @@ fn run(
 mod tests {
     use super::*;
     #[test]
+    fn curve_is_monotone_bounded_and_reaches_max_fifteen_below_top() {
+        let mut settings = Settings {
+            enabled: true,
+            mode: RunMode::Always,
+            minimum: 20,
+            maximum: 100,
+            ..Settings::default()
+        };
+        for exponent in [0.25, 0.6, 1.0, 2.0] {
+            settings.curve_exponent = exponent;
+            for top in [165, 200, 285, 380] {
+                let mut previous = 0;
+                for speed in 0..=600 {
+                    let v =
+                        settings.demand_with_top_speed(false, false, Some(f64::from(speed)), top)
+                            [0];
+                    assert!((200..=1000).contains(&v) && v >= previous);
+                    if speed >= top - 15 {
+                        assert_eq!(v, 1000);
+                    }
+                    previous = v;
+                }
+            }
+        }
+        settings.curve_exponent = 0.6;
+        let curved = settings.demand_with_top_speed(false, false, Some(67.5), 285)[0];
+        settings.curve_exponent = 1.0;
+        assert!(curved > settings.demand_with_top_speed(false, false, Some(67.5), 285)[0]);
+        settings.minimum = 0;
+        assert_eq!(
+            settings.demand_with_top_speed(false, false, Some(0.0), 285),
+            [0, 0]
+        );
+    }
+    #[test]
+    fn migrates_existing_settings_without_changing_fan_limits_or_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("wind.json");
+        let old=br#"{"version":1,"enabled":true,"mode":"Always","minimum":35,"maximum":80,"full_speed_kmh":180,"port":null,"left_enabled":false,"right_enabled":true}"#;
+        fs::write(&path, old).unwrap();
+        let settings = Settings::load(&path).unwrap();
+        assert_eq!(
+            (settings.version, settings.minimum, settings.maximum),
+            (2, 35, 80)
+        );
+        assert!(settings.automatic_car_speed && !settings.left_enabled && settings.right_enabled);
+        assert_eq!(settings.curve_exponent, 0.6);
+        assert_eq!(fs::read(path).unwrap(), old);
+    }
+    #[test]
+    fn active_car_switch_changes_scale_and_stale_identity_is_not_reused() {
+        let settings = Settings {
+            enabled: true,
+            mode: RunMode::Always,
+            ..Settings::default()
+        };
+        let mut snapshot = Snapshot {
+            telemetry_at: Some(Instant::now()),
+            bridge_at: Some(Instant::now()),
+            bridge_running: true,
+            game: "IRacing".into(),
+            car_id: "formulavee".into(),
+            speed_kmh: 150.0,
+            ..Snapshot::default()
+        };
+        assert_eq!(snapshot.requested(&settings), [800, 800]);
+        snapshot.car_id = "dallarair18".into();
+        assert_eq!(snapshot.estimate(&settings).full_speed_kmh(), 365);
+        assert!(snapshot.requested(&settings)[0] < 800);
+        snapshot.car_id.clear();
+        snapshot.car_model = "Unknown".into();
+        assert_eq!(snapshot.estimate(&settings).top_speed_kmh, 250);
+        snapshot.bridge_at = Some(Instant::now() - Duration::from_secs(2));
+        assert_eq!(snapshot.requested(&settings), [200, 200]);
+    }
+    #[test]
     fn mode_gates_minimum_and_speed_bounds() {
         let mut s = Settings {
             enabled: true,
+            curve_exponent: 1.0,
+            fallback_top_speed_kmh: 195,
             ..Settings::default()
         };
         assert_eq!(s.demand(true, false, Some(180.0)), [0, 0]);
@@ -595,7 +761,7 @@ mod tests {
         ] {
             assert!(Telemetry::parse(bad).is_none());
         }
-        assert!(BridgeFrame::parse(br#"{"version":1,"running":true,"speed_kmh":123.4}"#).is_some());
+        assert!(BridgeFrame::parse(br#"{"version":2,"running":true,"speed_kmh":123.4,"game":"IRacing","car_id":"mx5mx52016","car_model":"Global Mazda MX-5 Cup","car_class":"MX5"}"#).is_some());
         for bad in [
             br#"{"version":2,"running":true,"speed_kmh":123}"#.as_slice(),
             br#"{"version":1,"running":true,"speed_kmh":-1}"#,

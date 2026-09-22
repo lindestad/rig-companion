@@ -30,7 +30,7 @@ F13 always uses 98 cm, without overwriting the saved profile. Disable Global sho
 
 The **Driver settings** page reads the installed sboys defaults and overrides. It defaults to global/Dream Air settings, with search, sliders, embedded number steppers, dropdowns and hover help taken from the sboys controls. Changes remain drafts until **Apply changes**. See [driver controls and camera](docs/driver-controls.md).
 
-The **Wind simulator** page controls the LINDESTAD USB fan board, with minimum/maximum airflow, always/SteamVR/iRacing run modes, per-side enable switches and periodic RPM/status. The included SimHub plugin supplies vehicle speed over localhost while Rig Companion owns the COM port. See [setup and wind behavior](docs/wind-simulator.md). Wind defaults to disabled; enable it and apply your settings when ready.
+The **Wind simulator** page controls the LINDESTAD USB fan board, with minimum/maximum airflow, an editable curve and automatic iRacing car speed estimates, always/SteamVR/iRacing run modes, per-side enable switches and periodic RPM/status. The included SimHub plugin supplies vehicle speed over localhost while Rig Companion owns the COM port. See [setup and wind behavior](docs/wind-simulator.md). Wind defaults to disabled; enable it and apply your settings when ready.
 
 ## CLI and development
 

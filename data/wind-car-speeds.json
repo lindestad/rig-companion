@@ -1,0 +1,1708 @@
+{
+  "reviewed": "2026-09-22",
+  "sources": [
+    "https://support.iracing.com/support/solutions/articles/31000172625-filepath-for-active-iracing-cars",
+    "https://support.iracing.com/support/solutions/articles/31000179016-2026-season-3-initial-release-notes-2026-06-09-01-",
+    "https://support.iracing.com/support/solutions/articles/31000179517-2026-season-4-initial-release-notes-2026-09-09-01-",
+    "https://radicalmotorsport.com/news/50th-production-sr10"
+  ],
+  "cars": [
+    {
+      "name": "Acura ARX-06 GTP",
+      "aliases": [
+        "Acura ARX-06 GTP",
+        "\\acuraarx06gtp"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Acura NSX GT3 EVO 22",
+      "aliases": [
+        "Acura NSX GT3 EVO 22",
+        "\\acuransxevo22gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "ARCA Chevrolet SS",
+      "aliases": [
+        "ARCA Chevrolet SS",
+        "\\stockcars2\\arcachevy25"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "ARCA Ford Mustang",
+      "aliases": [
+        "ARCA Ford Mustang",
+        "\\stockcars2\\arcaford25"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "ARCA Toyota Camry",
+      "aliases": [
+        "ARCA Toyota Camry",
+        "\\stockcars2\\arcatoyota25"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Aston Martin DBR9 GT1",
+      "aliases": [
+        "Aston Martin DBR9 GT1",
+        "\\astonmartin\\dbr9"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Aston Martin Vantage GT3 EVO",
+      "aliases": [
+        "Aston Martin Vantage GT3 EVO",
+        "\\amvantageevogt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Aston Martin Vantage GT4",
+      "aliases": [
+        "Aston Martin Vantage GT4",
+        "\\amvantagegt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Audi 90 GTO",
+      "aliases": [
+        "Audi 90 GTO",
+        "\\audi90gto"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Audi R18",
+      "aliases": [
+        "Audi R18",
+        "\\audir18"
+      ],
+      "top_speed_kmh": 340,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Audi R8 LMS EVO II GT3",
+      "aliases": [
+        "Audi R8 LMS EVO II GT3",
+        "\\audir8lmsevo2gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Audi RS3 LMS TCR",
+      "aliases": [
+        "Audi RS3 LMS TCR",
+        "\\audirs3lms"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M Hybrid V8",
+      "aliases": [
+        "BMW M Hybrid V8",
+        "\\bmwlmdh"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M2 CSR",
+      "aliases": [
+        "BMW M2 CSR",
+        "\\bmwrn2csr",
+        "bmwm2csr",
+        "BMW M2 CS Racing"
+      ],
+      "top_speed_kmh": 250,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M4 GT3",
+      "aliases": [
+        "BMW M4 GT3",
+        "\\bmwm4gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M4 G82 GT4",
+      "aliases": [
+        "BMW M4 G82 GT4",
+        "\\bmwm4evogt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M4 F82 GT4 - 2018",
+      "aliases": [
+        "BMW M4 F82 GT4 - 2018",
+        "\\bmwm4gt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M8 GTE",
+      "aliases": [
+        "BMW M8 GTE",
+        "\\bmwm8gte"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Cadillac CTS-V Racecar",
+      "aliases": [
+        "Cadillac CTS-V Racecar",
+        "\\cadillacctsvr"
+      ],
+      "top_speed_kmh": 275,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Cadillac V-Series.R GTP",
+      "aliases": [
+        "Cadillac V-Series.R GTP",
+        "\\cadillacvseriesgtp"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Chevrolet Corvette C6.R GT1",
+      "aliases": [
+        "Chevrolet Corvette C6.R GT1",
+        "\\c6r"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Chevrolet Corvette C7 Daytona Prototype",
+      "aliases": [
+        "Chevrolet Corvette C7 Daytona Prototype",
+        "\\c7vettedp"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Chevrolet Corvette C8.R GTE",
+      "aliases": [
+        "Chevrolet Corvette C8.R GTE",
+        "\\c8rvettegte"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Chevrolet Corvette Z06 GT3.R",
+      "aliases": [
+        "Chevrolet Corvette Z06 GT3.R",
+        "\\chevyvettez06rgt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dallara F3",
+      "aliases": [
+        "Dallara F3",
+        "\\dallaraf3"
+      ],
+      "top_speed_kmh": 275,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dallara IL-15 (INDY NXT)",
+      "aliases": [
+        "Dallara IL-15 (INDY NXT)",
+        "\\dallarail15"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dallara iR-01",
+      "aliases": [
+        "Dallara iR-01",
+        "\\dallarair01"
+      ],
+      "top_speed_kmh": 360,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dallara IR18",
+      "aliases": [
+        "Dallara IR18",
+        "\\dallarair18"
+      ],
+      "top_speed_kmh": 380,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dallara P217",
+      "aliases": [
+        "Dallara P217",
+        "\\dallarap217"
+      ],
+      "top_speed_kmh": 325,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Big Block Modified",
+      "aliases": [
+        "Dirt Big Block Modified",
+        "\\dirtmodified\\bigblock"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt 358 Modified",
+      "aliases": [
+        "Dirt 358 Modified",
+        "\\dirtmodified\\358"
+      ],
+      "top_speed_kmh": 195,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Limited Dirt Late Model",
+      "aliases": [
+        "Limited Dirt Late Model",
+        "\\dirtlatemodel\\350"
+      ],
+      "top_speed_kmh": 180,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Pro Dirt Late Model",
+      "aliases": [
+        "Pro Dirt Late Model",
+        "\\dirtlatemodel\\358"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Super Dirt Late Model",
+      "aliases": [
+        "Super Dirt Late Model",
+        "\\dirtlatemodel\\438"
+      ],
+      "top_speed_kmh": 220,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Micro Sprint Car - Winged",
+      "aliases": [
+        "Dirt Micro Sprint Car - Winged",
+        "\\dirtmicrosprint\\winged"
+      ],
+      "top_speed_kmh": 160,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Micro Sprint Car - Non-Winged",
+      "aliases": [
+        "Dirt Micro Sprint Car - Non-Winged",
+        "\\dirtmicrosprint\\nonwinged"
+      ],
+      "top_speed_kmh": 160,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Midget",
+      "aliases": [
+        "Dirt Midget",
+        "\\dirtmidget"
+      ],
+      "top_speed_kmh": 180,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Mini Stock",
+      "aliases": [
+        "Dirt Mini Stock",
+        "\\dirtministock"
+      ],
+      "top_speed_kmh": 155,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Sprint Car - 305",
+      "aliases": [
+        "Dirt Sprint Car - 305",
+        "\\dirtsprint\\winged\\305"
+      ],
+      "top_speed_kmh": 190,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Sprint Car - 360",
+      "aliases": [
+        "Dirt Sprint Car - 360",
+        "\\dirtsprint\\winged\\360"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Sprint Car - 410",
+      "aliases": [
+        "Dirt Sprint Car - 410",
+        "\\dirtsprint\\winged\\410"
+      ],
+      "top_speed_kmh": 230,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Sprint Car Non-Winged - 360",
+      "aliases": [
+        "Dirt Sprint Car Non-Winged - 360",
+        "\\dirtsprint\\nonwinged\\360"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Sprint Car Non-Winged - 410",
+      "aliases": [
+        "Dirt Sprint Car Non-Winged - 410",
+        "\\dirtsprint\\nonwinged\\410"
+      ],
+      "top_speed_kmh": 220,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Street Stock",
+      "aliases": [
+        "Dirt Street Stock",
+        "\\dirtstreetstock"
+      ],
+      "top_speed_kmh": 175,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt UMP Modified",
+      "aliases": [
+        "Dirt UMP Modified",
+        "\\dirtumpmod"
+      ],
+      "top_speed_kmh": 195,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ferrari 296 Challenge",
+      "aliases": [
+        "Ferrari 296 Challenge",
+        "\\ferrari296challenge"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ferrari 296 GT3",
+      "aliases": [
+        "Ferrari 296 GT3",
+        "\\ferrari296gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ferrari 488 GT3 Evo 2020",
+      "aliases": [
+        "Ferrari 488 GT3 Evo 2020",
+        "\\ferrarievogt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ferrari 499P",
+      "aliases": [
+        "Ferrari 499P",
+        "\\ferrari499p"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ferrari 488 GTE",
+      "aliases": [
+        "Ferrari 488 GTE",
+        "\\ferrari488gte"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "FIA Cross Car",
+      "aliases": [
+        "FIA Cross Car",
+        "\\crosscartn11"
+      ],
+      "top_speed_kmh": 160,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "FIA F4",
+      "aliases": [
+        "FIA F4",
+        "\\formulair04",
+        "Formula iR-04",
+        "iRacing Formula iR-04"
+      ],
+      "top_speed_kmh": 240,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford Fiesta RS WRC",
+      "aliases": [
+        "Ford Fiesta RS WRC",
+        "\\fordfiestarswrc"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford GTE",
+      "aliases": [
+        "Ford GTE",
+        "\\fordgt2017"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford GT GT2",
+      "aliases": [
+        "Ford GT GT2",
+        "\\fordgt"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford GT GT3",
+      "aliases": [
+        "Ford GT GT3",
+        "\\fordgt\\gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford Mustang FR500S",
+      "aliases": [
+        "Ford Mustang FR500S",
+        "\\fr500s"
+      ],
+      "top_speed_kmh": 240,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford Mustang GT3",
+      "aliases": [
+        "Ford Mustang GT3",
+        "\\fordmustanggt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ford Mustang GT4",
+      "aliases": [
+        "Ford Mustang GT4",
+        "\\fordmustanggt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Formula Renault 2.0",
+      "aliases": [
+        "Formula Renault 2.0",
+        "\\formularenault20"
+      ],
+      "top_speed_kmh": 250,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Formula Renault 3.5",
+      "aliases": [
+        "Formula Renault 3.5",
+        "\\formularenault35"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Formula Vee",
+      "aliases": [
+        "Formula Vee",
+        "\\formulavee"
+      ],
+      "top_speed_kmh": 165,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Global Mazda MX-5 Cup",
+      "aliases": [
+        "Global Mazda MX-5 Cup",
+        "\\mx5\\mx52016",
+        "Mazda MX-5 Cup",
+        "Mazda MX-5 Cup 2016"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Honda Civic Type R TCR",
+      "aliases": [
+        "Honda Civic Type R TCR",
+        "\\hondacivictyper"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "HPD ARX-01c",
+      "aliases": [
+        "HPD ARX-01c",
+        "\\hpdarx01c"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Hyundai Elantra N TCR",
+      "aliases": [
+        "Hyundai Elantra N TCR",
+        "\\hyundaielantracn7"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Hyundai Veloster N TCR",
+      "aliases": [
+        "Hyundai Veloster N TCR",
+        "\\hyundaivelostern"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Indy Pro 2000 PM-18",
+      "aliases": [
+        "Indy Pro 2000 PM-18",
+        "\\indypropm18"
+      ],
+      "top_speed_kmh": 270,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Kia Optima",
+      "aliases": [
+        "Kia Optima",
+        "\\kiaoptima"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Lamborghini Huracán GT3 EVO",
+      "aliases": [
+        "Lamborghini Huracán GT3 EVO",
+        "\\lamborghinievogt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Late Model Stock",
+      "aliases": [
+        "Late Model Stock",
+        "\\latemodel2023"
+      ],
+      "top_speed_kmh": 235,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Legends Ford '34 Coupe",
+      "aliases": [
+        "Legends Ford '34 Coupe",
+        "\\legends\\ford34c"
+      ],
+      "top_speed_kmh": 195,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Legends Ford '34 Coupe - Rookie",
+      "aliases": [
+        "Legends Ford '34 Coupe - Rookie",
+        "\\legends\\ford34c\\rookie"
+      ],
+      "top_speed_kmh": 195,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ligier JS P320",
+      "aliases": [
+        "Ligier JS P320",
+        "\\ligierjsp320"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Lotus 49",
+      "aliases": [
+        "Lotus 49",
+        "\\lotus49"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Lotus 79",
+      "aliases": [
+        "Lotus 79",
+        "\\lotus79"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Lucas Oil Off Road Pro 2 Lite",
+      "aliases": [
+        "Lucas Oil Off Road Pro 2 Lite",
+        "\\protrucks\\pro2lite"
+      ],
+      "top_speed_kmh": 150,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Lucas Oil Off Road Pro 2 Truck",
+      "aliases": [
+        "Lucas Oil Off Road Pro 2 Truck",
+        "\\protrucks\\pro2truck"
+      ],
+      "top_speed_kmh": 180,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Lucas Oil Off Road Pro 4 Truck",
+      "aliases": [
+        "Lucas Oil Off Road Pro 4 Truck",
+        "\\protrucks\\pro4truck"
+      ],
+      "top_speed_kmh": 190,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "McLaren 570S GT4",
+      "aliases": [
+        "McLaren 570S GT4",
+        "\\mclaren570sgt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "McLaren 720S GT3 EVO",
+      "aliases": [
+        "McLaren 720S GT3 EVO",
+        "\\mclaren720sgt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "McLaren MP4-12C GT3",
+      "aliases": [
+        "McLaren MP4-12C GT3",
+        "\\mclarenmp4",
+        "[Legacy] McLaren MP4-12C GT3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "McLaren MP4-30",
+      "aliases": [
+        "McLaren MP4-30",
+        "\\mclarenmp430"
+      ],
+      "top_speed_kmh": 350,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Mercedes-AMG GT3 2020",
+      "aliases": [
+        "Mercedes-AMG GT3 2020",
+        "\\mercedesamgevogt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Mercedes-AMG GT4",
+      "aliases": [
+        "Mercedes-AMG GT4",
+        "\\mercedesamggt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Mercedes-AMG W12 E Performance",
+      "aliases": [
+        "Mercedes-AMG W12 E Performance",
+        "\\mercedesw12"
+      ],
+      "top_speed_kmh": 350,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Mercedes-AMG W13 E Performance",
+      "aliases": [
+        "Mercedes-AMG W13 E Performance",
+        "\\mercedesw13"
+      ],
+      "top_speed_kmh": 350,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Mini Stock",
+      "aliases": [
+        "Mini Stock",
+        "\\ministock"
+      ],
+      "top_speed_kmh": 175,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Cup Series Chevrolet Camaro ZL1",
+      "aliases": [
+        "NASCAR Cup Series Chevrolet Camaro ZL1",
+        "\\stockcars\\camarozl12018"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Cup Series Ford Mustang",
+      "aliases": [
+        "NASCAR Cup Series Ford Mustang",
+        "\\stockcars\\fordmustang2019"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Cup Series Toyota Camry",
+      "aliases": [
+        "NASCAR Cup Series Toyota Camry",
+        "\\stockcars\\toyotacamry"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Cup Series Next Gen Chevrolet Camaro ZL1",
+      "aliases": [
+        "NASCAR Cup Series Next Gen Chevrolet Camaro ZL1",
+        "\\stockcars\\camarozl12022"
+      ],
+      "top_speed_kmh": 315,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Cup Series Next Gen Ford Mustang",
+      "aliases": [
+        "NASCAR Cup Series Next Gen Ford Mustang",
+        "\\stockcars\\fordmustang2022"
+      ],
+      "top_speed_kmh": 315,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Cup Series Next Gen Toyota Camry",
+      "aliases": [
+        "NASCAR Cup Series Next Gen Toyota Camry",
+        "\\stockcars\\toyotacamry2022"
+      ],
+      "top_speed_kmh": 315,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Gen 4 Chevrolet Monte Carlo - 2003",
+      "aliases": [
+        "NASCAR Gen 4 Chevrolet Monte Carlo - 2003",
+        "\\stockcars\\chevymontecarlo03"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Gen 4 Ford Taurus - 2003",
+      "aliases": [
+        "NASCAR Gen 4 Ford Taurus - 2003",
+        "\\stockcars\\fordtaurus03"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Legends Buick LeSabre - 1987",
+      "aliases": [
+        "NASCAR Legends Buick LeSabre - 1987",
+        "\\stockcars\\buicklesabre87"
+      ],
+      "top_speed_kmh": 345,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Legends Chevrolet Monte Carlo - 1987",
+      "aliases": [
+        "NASCAR Legends Chevrolet Monte Carlo - 1987",
+        "\\stockcars\\chevymontecarlo87"
+      ],
+      "top_speed_kmh": 345,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Legends Ford Thunderbird - 1987",
+      "aliases": [
+        "NASCAR Legends Ford Thunderbird - 1987",
+        "\\stockcars\\fordthunderbird87"
+      ],
+      "top_speed_kmh": 345,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Legends Pontiac Grand Prix - 1987",
+      "aliases": [
+        "NASCAR Legends Pontiac Grand Prix - 1987",
+        "\\stockcars\\pontiacgrandprix87"
+      ],
+      "top_speed_kmh": 345,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Truck Chevrolet Silverado",
+      "aliases": [
+        "NASCAR Truck Chevrolet Silverado",
+        "\\trucks\\silverado2019"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Truck Ford F150",
+      "aliases": [
+        "NASCAR Truck Ford F150",
+        "\\trucks\\fordf150"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Truck Toyota Tundra TRD Pro",
+      "aliases": [
+        "NASCAR Truck Toyota Tundra TRD Pro",
+        "\\trucks\\toyotatundra2022"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Whelen Tour Modified",
+      "aliases": [
+        "NASCAR Whelen Tour Modified",
+        "\\skmodified\\tour"
+      ],
+      "top_speed_kmh": 250,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Modified - SK",
+      "aliases": [
+        "Modified - SK",
+        "\\skmodified"
+      ],
+      "top_speed_kmh": 220,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Xfinity Chevrolet Camaro",
+      "aliases": [
+        "NASCAR Xfinity Chevrolet Camaro",
+        "\\stockcars2\\camaro2019"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Xfinity Ford Mustang",
+      "aliases": [
+        "NASCAR Xfinity Ford Mustang",
+        "\\stockcars2\\mustang2019"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Xfinity Toyota Supra",
+      "aliases": [
+        "NASCAR Xfinity Toyota Supra",
+        "\\stockcars2\\supra2019"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Nissan GTP ZXT",
+      "aliases": [
+        "Nissan GTP ZXT",
+        "\\nissangtpzxt"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Pontiac Solstice",
+      "aliases": [
+        "Pontiac Solstice",
+        "\\solstice"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Pontiac Solstice - Rookie",
+      "aliases": [
+        "Pontiac Solstice - Rookie",
+        "\\solstice\\rookie"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche 718 Cayman GT4 Clubsport MR",
+      "aliases": [
+        "Porsche 718 Cayman GT4 Clubsport MR",
+        "\\porsche718gt4"
+      ],
+      "top_speed_kmh": 265,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche 911 Cup (992.2)",
+      "aliases": [
+        "Porsche 911 Cup (992.2)",
+        "\\porsche9922cup"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche 911 GT3 R (992)",
+      "aliases": [
+        "Porsche 911 GT3 R (992)",
+        "\\porsche992rgt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche 911 RSR",
+      "aliases": [
+        "Porsche 911 RSR",
+        "\\porsche991rsr"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche 919",
+      "aliases": [
+        "Porsche 919",
+        "\\porsche919"
+      ],
+      "top_speed_kmh": 340,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche 963 GTP",
+      "aliases": [
+        "Porsche 963 GTP",
+        "\\porsche963gtp"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Porsche Mission R",
+      "aliases": [
+        "Porsche Mission R",
+        "\\porschemissionr"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Radical SR8",
+      "aliases": [
+        "Radical SR8",
+        "\\radical\\sr8"
+      ],
+      "top_speed_kmh": 280,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Radical SR10",
+      "aliases": [
+        "Radical SR10",
+        "\\radical\\radicalsr10"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Radical published 180 mph, rounded to 290 km/h"
+    },
+    {
+      "name": "Ray FF1600",
+      "aliases": [
+        "Ray FF1600",
+        "\\raygr22",
+        "Ray Formula 1600"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Renault Clio",
+      "aliases": [
+        "Renault Clio",
+        "\\renaultcliocup",
+        "Renault Clio R.S. V"
+      ],
+      "top_speed_kmh": 220,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ruf RT 12R AWD",
+      "aliases": [
+        "Ruf RT 12R AWD",
+        "\\rufrt12r\\awd"
+      ],
+      "top_speed_kmh": 340,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ruf RT 12R C-Spec",
+      "aliases": [
+        "Ruf RT 12R C-Spec",
+        "\\rufrt12r\\track\\cspec"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ruf RT 12R RWD",
+      "aliases": [
+        "Ruf RT 12R RWD",
+        "\\rufrt12r\\rwd"
+      ],
+      "top_speed_kmh": 340,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Ruf RT 12R Track",
+      "aliases": [
+        "Ruf RT 12R Track",
+        "\\rufrt12r\\track"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "SCCA Spec Racer Ford",
+      "aliases": [
+        "SCCA Spec Racer Ford",
+        "\\specracer"
+      ],
+      "top_speed_kmh": 240,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Silver Crown",
+      "aliases": [
+        "Silver Crown",
+        "\\silvercrown"
+      ],
+      "top_speed_kmh": 280,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Skip Barber Formula 2000",
+      "aliases": [
+        "Skip Barber Formula 2000",
+        "\\rt2000"
+      ],
+      "top_speed_kmh": 220,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Sprint Car",
+      "aliases": [
+        "Sprint Car",
+        "\\sprint"
+      ],
+      "top_speed_kmh": 260,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Stock Car Pro Series Chevrolet Cruze",
+      "aliases": [
+        "Stock Car Pro Series Chevrolet Cruze",
+        "\\stockcarbrasil\\cruze"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Stock Car Pro Series Toyota Corolla",
+      "aliases": [
+        "Stock Car Pro Series Toyota Corolla",
+        "\\stockcarbrasil\\corolla"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Street Stock",
+      "aliases": [
+        "Street Stock",
+        "\\streetstock"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Street Stock - Casino",
+      "aliases": [
+        "Street Stock - Casino",
+        "\\streetstock\\streetstock2"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Street Stock - Eagle",
+      "aliases": [
+        "Street Stock - Eagle",
+        "\\streetstock\\streetstock3"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Subaru WRX STI",
+      "aliases": [
+        "Subaru WRX STI",
+        "\\subaruwrxsti"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Supercars Ford Mustang Gen 3",
+      "aliases": [
+        "Supercars Ford Mustang Gen 3",
+        "\\supercars\\fordmustanggen3"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Supercars Ford Mustang GT",
+      "aliases": [
+        "Supercars Ford Mustang GT",
+        "\\v8supercars\\fordmustanggt",
+        "Supercars Ford Mustang GT"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Super Formula SF23 - Toyota",
+      "aliases": [
+        "Super Formula SF23 - Toyota",
+        "\\superformulasf23\\toyota"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Super Formula SF23 - Honda",
+      "aliases": [
+        "Super Formula SF23 - Honda",
+        "\\superformulasf23\\honda"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Super Late Model",
+      "aliases": [
+        "Super Late Model",
+        "\\superlatemodel"
+      ],
+      "top_speed_kmh": 250,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Supercars Holden ZB Commodore",
+      "aliases": [
+        "Supercars Holden ZB Commodore",
+        "\\v8supercars\\holden2019"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Super Formula Lights",
+      "aliases": [
+        "Super Formula Lights",
+        "\\superformulalights324"
+      ],
+      "top_speed_kmh": 280,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Toyota GR86",
+      "aliases": [
+        "Toyota GR86",
+        "\\toyotagr86"
+      ],
+      "top_speed_kmh": 225,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "USF 2000",
+      "aliases": [
+        "USF 2000",
+        "\\usf2000usf17"
+      ],
+      "top_speed_kmh": 240,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "VW Beetle",
+      "aliases": [
+        "VW Beetle",
+        "\\vwbeetlegrc"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "VW Beetle Lite",
+      "aliases": [
+        "VW Beetle Lite",
+        "\\vwbeetlegrc\\lite"
+      ],
+      "top_speed_kmh": 180,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "VW Jetta TDI Cup",
+      "aliases": [
+        "VW Jetta TDI Cup",
+        "\\jettatdi"
+      ],
+      "top_speed_kmh": 210,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Williams FW31",
+      "aliases": [
+        "Williams FW31",
+        "\\williamsfw31"
+      ],
+      "top_speed_kmh": 350,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] ARCA Menards Chevrolet Impala",
+      "aliases": [
+        "[Legacy] ARCA Menards Chevrolet Impala",
+        "\\stockcars2\\chevy"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Gen 4 Cup",
+      "aliases": [
+        "[Legacy] Gen 4 Cup",
+        "\\stockcars2\\chevy\\gen4cup"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Audi R8 LMS GT3",
+      "aliases": [
+        "[Legacy] Audi R8 LMS GT3",
+        "\\audir8gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] BMW Z4 GT3",
+      "aliases": [
+        "[Legacy] BMW Z4 GT3",
+        "\\bmwz4gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Dallara DW12",
+      "aliases": [
+        "[Legacy] Dallara DW12",
+        "\\dallaradw12"
+      ],
+      "top_speed_kmh": 380,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Dallara IR-05",
+      "aliases": [
+        "[Legacy] Dallara IR-05",
+        "\\dallara"
+      ],
+      "top_speed_kmh": 380,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Ferrari 488 GT3",
+      "aliases": [
+        "[Legacy] Ferrari 488 GT3",
+        "\\ferrari488gt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Mazda MX-5 Cup - 2010",
+      "aliases": [
+        "[Legacy] Mazda MX-5 Cup - 2010",
+        "\\mx5\\cup"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Mazda MX-5 Roadster - 2010",
+      "aliases": [
+        "[Legacy] Mazda MX-5 Roadster - 2010",
+        "\\mx5\\roadster"
+      ],
+      "top_speed_kmh": 200,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Mercedes-AMG GT3",
+      "aliases": [
+        "[Legacy] Mercedes-AMG GT3",
+        "\\mercedesamggt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Cup Chevrolet Impala COT - 2009",
+      "aliases": [
+        "[Legacy] NASCAR Cup Chevrolet Impala COT - 2009",
+        "\\stockcars\\impala"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Cup Chevrolet SS - 2013",
+      "aliases": [
+        "[Legacy] NASCAR Cup Chevrolet SS - 2013",
+        "\\stockcars\\chevyss"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Cup Ford Fusion - 2016",
+      "aliases": [
+        "[Legacy] NASCAR Cup Ford Fusion - 2016",
+        "\\stockcars\\fordfusion"
+      ],
+      "top_speed_kmh": 330,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Nationwide Chevrolet Impala - 2012",
+      "aliases": [
+        "[Legacy] NASCAR Nationwide Chevrolet Impala - 2012",
+        "\\stockcars2\\chevy\\cot"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Truck Chevrolet Silverado - 2008",
+      "aliases": [
+        "[Legacy] NASCAR Truck Chevrolet Silverado - 2008",
+        "\\trucks\\silverado"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Xfinity Chevrolet Camaro - 2014",
+      "aliases": [
+        "[Legacy] NASCAR Xfinity Chevrolet Camaro - 2014",
+        "\\stockcars2\\nwcamaro2014"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Xfinity Ford Mustang - 2016",
+      "aliases": [
+        "[Legacy] NASCAR Xfinity Ford Mustang - 2016",
+        "\\stockcars2\\nwford2013"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] NASCAR Xfinity Toyota Camry - 2015",
+      "aliases": [
+        "[Legacy] NASCAR Xfinity Toyota Camry - 2015",
+        "\\stockcars2\\camry2015"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Porsche 911 GT3 Cup (991)",
+      "aliases": [
+        "[Legacy] Porsche 911 GT3 Cup (991)",
+        "\\porsche911cup"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Porsche 911 GT3 Cup (992.1)",
+      "aliases": [
+        "[Legacy] Porsche 911 GT3 Cup (992.1)",
+        "\\porsche992cup"
+      ],
+      "top_speed_kmh": 290,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Porsche 911 GT3 R",
+      "aliases": [
+        "[Legacy] Porsche 911 GT3 R",
+        "\\porsche911rgt3"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Pro Mazda",
+      "aliases": [
+        "[Legacy] Pro Mazda",
+        "\\formulamazda"
+      ],
+      "top_speed_kmh": 270,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] Riley MkXX Daytona Prototype - 2008",
+      "aliases": [
+        "[Legacy] Riley MkXX Daytona Prototype - 2008",
+        "\\rileydp"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] V8 Supercar Ford Falcon - 2009",
+      "aliases": [
+        "[Legacy] V8 Supercar Ford Falcon - 2009",
+        "\\fordv8sc"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] V8 Supercar Ford FG Falcon - 2014",
+      "aliases": [
+        "[Legacy] V8 Supercar Ford FG Falcon - 2014",
+        "\\v8supercars\\ford2014"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "[Legacy] V8 Supercar Holden VF Commodore - 2014",
+      "aliases": [
+        "[Legacy] V8 Supercar Holden VF Commodore - 2014",
+        "\\v8supercars\\holden2014"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M2 Racing (G87)",
+      "aliases": [
+        "BMW M2 Racing (G87)"
+      ],
+      "top_speed_kmh": 270,
+      "basis": "iRacing 2026 S3 published 270 km/h; ruleset-dependent"
+    },
+    {
+      "name": "EURO NASCAR RC01",
+      "aliases": [
+        "EURO NASCAR RC01"
+      ],
+      "top_speed_kmh": 250,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Formula Vee - Cutlass",
+      "aliases": [
+        "Formula Vee - Cutlass"
+      ],
+      "top_speed_kmh": 165,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Formula Vee - Conqueror",
+      "aliases": [
+        "Formula Vee - Conqueror"
+      ],
+      "top_speed_kmh": 165,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Formula Vee - Classic",
+      "aliases": [
+        "Formula Vee - Classic"
+      ],
+      "top_speed_kmh": 165,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Aston Martin Valkyrie AMR-LMH",
+      "aliases": [
+        "Aston Martin Valkyrie AMR-LMH"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Caterham Academy",
+      "aliases": [
+        "Caterham Academy"
+      ],
+      "top_speed_kmh": 195,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Caterham 420R",
+      "aliases": [
+        "Caterham 420R"
+      ],
+      "top_speed_kmh": 220,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Gen 4 Grand National",
+      "aliases": [
+        "Gen 4 Grand National"
+      ],
+      "top_speed_kmh": 310,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Supercars Chevrolet Camaro Gen 3",
+      "aliases": [
+        "Supercars Chevrolet Camaro Gen 3"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "NASCAR Truck RAM",
+      "aliases": [
+        "NASCAR Truck RAM"
+      ],
+      "top_speed_kmh": 300,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "Dirt Legends Ford '34 Coupe",
+      "aliases": [
+        "Dirt Legends Ford '34 Coupe"
+      ],
+      "top_speed_kmh": 180,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M4 GT3 EVO",
+      "aliases": [
+        "BMW M4 GT3 EVO"
+      ],
+      "top_speed_kmh": 285,
+      "basis": "Approximate car/class estimate"
+    },
+    {
+      "name": "BMW M Hybrid V8 Evo",
+      "aliases": [
+        "BMW M Hybrid V8 Evo"
+      ],
+      "top_speed_kmh": 335,
+      "basis": "Approximate car/class estimate"
+    }
+  ]
+}

@@ -23,7 +23,9 @@ pub enum Message {
     Mode(RunMode),
     Minimum(u16),
     Maximum(u16),
-    FullSpeed(u16),
+    TopSpeed(u16),
+    AutomaticCarSpeed(bool),
+    Curve(f64),
     Port(String),
     Left(bool),
     Right(bool),
@@ -70,7 +72,9 @@ impl State {
                 self.draft.maximum = value;
                 self.draft.minimum = self.draft.minimum.min(value);
             }
-            Message::FullSpeed(value) => self.draft.full_speed_kmh = value,
+            Message::TopSpeed(value) => self.draft.fallback_top_speed_kmh = value,
+            Message::AutomaticCarSpeed(value) => self.draft.automatic_car_speed = value,
+            Message::Curve(value) => self.draft.curve_exponent = value,
             Message::Port(value) => self.draft.port = (value != "Automatic").then_some(value),
             Message::Left(value) => self.draft.left_enabled = value,
             Message::Right(value) => self.draft.right_enabled = value,
@@ -117,6 +121,8 @@ impl State {
             .port
             .clone()
             .unwrap_or_else(|| "Automatic".into());
+        let estimate = s.estimate(&self.draft);
+        let active_estimate = s.estimate(&self.applied);
         let settings = column![
             row![text("Airflow").size(23), Space::new().width(Fill), checkbox(self.draft.enabled).label("Enable wind").on_toggle(Message::Enabled)].spacing(18),
             text("Run when").size(14),
@@ -125,8 +131,14 @@ impl State {
             slider(0..=100, self.draft.minimum, Message::Minimum).step(5u16),
             text(format!("Maximum · {}%", self.draft.maximum)),
             slider(5..=100, self.draft.maximum, Message::Maximum).step(5u16),
-            text(format!("Reach maximum at {} km/h", self.draft.full_speed_kmh)),
-            slider(10..=500, self.draft.full_speed_kmh, Message::FullSpeed).step(10u16),
+            checkbox(self.draft.automatic_car_speed).label("Use active iRacing car's estimated top speed").on_toggle(Message::AutomaticCarSpeed),
+            text(format!("{} · {} km/h", if self.draft.automatic_car_speed { "Fallback top speed (unknown car)" } else { "Manual top speed" }, self.draft.fallback_top_speed_kmh)).size(14),
+            slider(25..=500, self.draft.fallback_top_speed_kmh, Message::TopSpeed).step(5u16),
+            text(format!("Maximum fan setting at {} km/h (top speed − 15)", estimate.full_speed_kmh())).size(14),
+            text(format!("Curve shape · {:.2}{}", self.draft.curve_exponent, if (self.draft.curve_exponent - 1.0).abs() < 0.001 { " · linear" } else if self.draft.curve_exponent < 1.0 { " · stronger at low speeds" } else { " · gentler at low speeds" })).size(14),
+            slider(0.25..=2.0, self.draft.curve_exponent, Message::Curve).step(0.05),
+            iced::widget::canvas(CurvePlot { minimum:self.draft.minimum, maximum:self.draft.maximum, exponent:self.draft.curve_exponent, full_speed:estimate.full_speed_kmh() }).width(Fill).height(155),
+            text(if self.draft.minimum == self.draft.maximum { "Minimum equals maximum: airflow is constant. Lower minimum to use the curve." } else { "Lower curve values give more wind earlier. 1.00 is linear; 0.60 is the default." }).size(12),
             row![checkbox(self.draft.left_enabled).label("Left · L1 + L2").on_toggle(Message::Left), checkbox(self.draft.right_enabled).label("Right · R1 + R2").on_toggle(Message::Right)].spacing(24),
             text("Both enabled sides follow vehicle speed. Each startup includes a brief full-speed kick.").size(12),
             row![button("Apply changes").on_press_maybe((!self.load_failed).then_some(Message::Apply)), button("Stop now").on_press(Message::Stop), text(if self.draft != self.applied { "Unsaved changes" } else { "Settings saved" }).size(12)].spacing(14),
@@ -164,6 +176,22 @@ impl State {
                 "Waiting for SimHub · minimum airflow inside the selected run mode".into()
             })
             .size(14),
+            text(format!(
+                "Car · {}",
+                if active_estimate.car.is_empty() {
+                    "Not identified"
+                } else {
+                    &active_estimate.car
+                }
+            ))
+            .size(16),
+            text(format!(
+                "Estimated top speed · {} km/h\nMaximum fan setting · {} km/h",
+                active_estimate.top_speed_kmh,
+                active_estimate.full_speed_kmh()
+            ))
+            .size(14),
+            text(active_estimate.basis).size(12),
             text(s.error.as_deref().unwrap_or("")).size(13),
             text(s.bridge_error.as_deref().unwrap_or("")).size(13),
             button(if s.suspended {
@@ -233,5 +261,88 @@ impl State {
             text("RPM is estimated from tach pulses (2 per revolution). Voltage, current and temperature are not measured by this board.").size(12),
             text("Keep Rig Companion open or minimized. Closing it stops the fans. Enable ‘Rig Companion Wind Bridge’ in SimHub’s plugin list; no Custom Serial Device is needed.").size(13),
         ].spacing(18).padding(2)).into()
+    }
+}
+
+struct CurvePlot {
+    minimum: u16,
+    maximum: u16,
+    exponent: f64,
+    full_speed: u16,
+}
+impl iced::widget::canvas::Program<Message> for CurvePlot {
+    type State = ();
+    fn draw(
+        &self,
+        _: &(),
+        renderer: &iced::Renderer,
+        _: &iced::Theme,
+        bounds: iced::Rectangle,
+        _: iced::mouse::Cursor,
+    ) -> Vec<iced::widget::canvas::Geometry> {
+        use iced::{
+            Color, Point,
+            widget::canvas::{Frame, Path, Stroke, Text},
+        };
+        let mut frame = Frame::new(renderer, bounds.size());
+        let w = (bounds.width - 64.0).max(1.0);
+        let h = (bounds.height - 36.0).max(1.0);
+        let point = |x: f32, y: f32| Point::new(32.0 + x * w, 8.0 + (1.0 - y) * h);
+        for i in 0..=4 {
+            let t = i as f32 / 4.0;
+            frame.stroke(
+                &Path::line(point(t, 0.0), point(t, 1.0)),
+                Stroke::default().with_color(Color::from_rgb8(60, 60, 67)),
+            );
+            frame.stroke(
+                &Path::line(point(0.0, t), point(1.0, t)),
+                Stroke::default().with_color(Color::from_rgb8(60, 60, 67)),
+            );
+        }
+        frame.stroke(
+            &Path::line(
+                point(0.0, self.minimum as f32 / 100.0),
+                point(1.0, self.maximum as f32 / 100.0),
+            ),
+            Stroke::default().with_color(Color::from_rgb8(110, 110, 120)),
+        );
+        let path = Path::new(|b| {
+            for i in 0..=100 {
+                let x = i as f32 / 100.0;
+                let y = (self.minimum as f64
+                    + (self.maximum - self.minimum) as f64 * (x as f64).powf(self.exponent))
+                    as f32
+                    / 100.0;
+                if i == 0 {
+                    b.move_to(point(x, y));
+                } else {
+                    b.line_to(point(x, y));
+                }
+            }
+        });
+        frame.stroke(
+            &path,
+            Stroke::default()
+                .with_color(Color::from_rgb8(181, 155, 255))
+                .with_width(2.5),
+        );
+        for (label, p) in [
+            ("100%".to_string(), Point::new(0.0, 0.0)),
+            ("0".into(), Point::new(16.0, h)),
+            ("0 km/h".into(), Point::new(32.0, h + 14.0)),
+            (
+                format!("{} km/h", self.full_speed),
+                Point::new(32.0 + w - 50.0, h + 14.0),
+            ),
+        ] {
+            frame.fill_text(Text {
+                content: label,
+                position: p,
+                color: Color::from_rgb8(190, 190, 200),
+                size: 11.0.into(),
+                ..Text::default()
+            });
+        }
+        vec![frame.into_geometry()]
     }
 }

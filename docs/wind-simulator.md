@@ -48,10 +48,12 @@ SDK references: [SimHub plugin SDK](https://github.com/SHWotever/SimHub/wiki/Plu
 
 ## Validation
 
-45 Rust tests pass, including mode gating, speed mapping/caps, stale SimHub fallback, stale controller stop, strict protocol parsing and settings validation. Clippy passes with warnings denied. The plugin builds against the installed SimHub 9.12.4 assemblies with no warnings. The updated firmware passes 26 host tests and 43 target-build checks; flashing was hash-verified and the physical board returned valid stopped-state RPM telemetry.
+48 Rust tests pass, including mode gating, speed mapping/caps, stale SimHub fallback, stale controller stop, strict protocol parsing and settings validation. Clippy passes with warnings denied. The plugin builds against the installed SimHub 9.12.4 assemblies with no warnings. The updated firmware passes 26 host tests and 43 target-build checks; flashing was hash-verified and the physical board returned valid stopped-state RPM telemetry.
 
 With the actual SimHub plugin enabled, `cargo run --example wind_smoke` passes USB telemetry/heartbeat, disabled output, release/reconnect and shutdown checks. This test deliberately leaves fan outputs at zero and requires the GUI closed. It does not launch iRacing or prove on-track wind feel. Vehicle-speed behavior is unit-tested; a real driving session remains the user acceptance check.
 
 Settings live beside the existing profile as `wind.json` (`demo-wind.json` in demo). Missing files use disabled defaults; malformed or newer settings are preserved, reported, and cannot be overwritten from the page. Defaults are 20% minimum, 80% maximum, Balanced point curve with 100% smoothing, automatic car estimate and a 250 km/h fallback top speed (maximum at 235 km/h). Open this page directly with `rig-companion.exe --wind`; combine with `--no-launch` to avoid launching the VR stack.
 
 Upgrade the bridge DLL alongside Rig Companion: the new receiver requires v2 car identity fields. `scripts/test-wind-bridge.ps1` exercises actual SDK callbacks and JSON/UDP on an isolated ephemeral port using Windows PowerShell 5.1.
+
+The SimHub status label updates only after a new connection/game state persists for 500 ms. The UI reads the worker snapshot every 100 ms so cached heartbeats do not age out between one-second UI refreshes. Speed numbers stay live within the running state. This display delay does not change the worker's one-second SimHub freshness rule, controller timeout, or fan commands. Tests cover transient expiry, persistent disconnect/recovery, game-state changes and speed updates.

@@ -456,7 +456,9 @@ impl App {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let mut subscriptions = vec![
-            iced::time::every(Duration::from_secs(1))
+            // Read the worker's cached snapshot; this does not poll the hardware.
+            // Refresh faster than the one-second SimHub heartbeat expiry.
+            iced::time::every(Duration::from_millis(100))
                 .map(|_| Message::Wind(crate::wind_ui::Message::Tick)),
             iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick),
             iced::event::listen_with(|event, _, _| match event {

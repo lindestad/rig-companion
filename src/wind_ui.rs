@@ -6,7 +6,66 @@ use iced::{
 };
 use rig_companion::wind::{self, RunMode, Settings, Snapshot, Worker};
 use rig_companion::wind_curve::{Curve, MAX_POINTS, Preset};
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum BridgeStatus {
+    #[default]
+    Waiting,
+    Idle,
+    Running,
+}
+impl BridgeStatus {
+    fn at(snapshot: &Snapshot, now: Instant) -> Self {
+        if !snapshot
+            .bridge_at
+            .is_some_and(|at| now.saturating_duration_since(at) < Duration::from_secs(1))
+        {
+            Self::Waiting
+        } else if snapshot.bridge_running {
+            Self::Running
+        } else {
+            Self::Idle
+        }
+    }
+}
+
+/// Display-only debounce. The worker still uses live freshness for fan control.
+#[derive(Default)]
+struct BridgeDisplay {
+    visible: BridgeStatus,
+    pending: Option<(BridgeStatus, Instant)>,
+    speed_kmh: f64,
+}
+impl BridgeDisplay {
+    fn observe(&mut self, snapshot: &Snapshot, now: Instant) {
+        let status = BridgeStatus::at(snapshot, now);
+        if status == BridgeStatus::Running {
+            self.speed_kmh = snapshot.speed_kmh;
+        }
+        if status == self.visible {
+            self.pending = None;
+        } else if let Some((candidate, since)) = self.pending
+            && candidate == status
+        {
+            if now.saturating_duration_since(since) >= Duration::from_millis(500) {
+                self.visible = status;
+                self.pending = None;
+            }
+        } else {
+            self.pending = Some((status, now));
+        }
+    }
+    fn label(&self) -> String {
+        match self.visible {
+            BridgeStatus::Waiting => {
+                "Waiting for SimHub · minimum airflow inside the selected run mode".into()
+            }
+            BridgeStatus::Idle => "SimHub connected · no active game".into(),
+            BridgeStatus::Running => format!("SimHub connected · {:.0} km/h", self.speed_kmh),
+        }
+    }
+}
 
 pub struct State {
     worker: Worker,
@@ -17,6 +76,7 @@ pub struct State {
     load_failed: bool,
     notice: String,
     selected_point: Option<usize>,
+    bridge_display: BridgeDisplay,
 }
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -63,6 +123,7 @@ impl State {
             load_failed,
             notice,
             selected_point: None,
+            bridge_display: BridgeDisplay::default(),
         }
     }
     pub fn suspend(&self) {
@@ -70,7 +131,10 @@ impl State {
     }
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::Tick => self.snapshot = self.worker.snapshot(),
+            Message::Tick => {
+                self.snapshot = self.worker.snapshot();
+                self.bridge_display.observe(&self.snapshot, Instant::now());
+            }
             Message::Enabled(value) => self.draft.enabled = value,
             Message::Mode(value) => self.draft.mode = value,
             Message::Minimum(value) => {
@@ -223,16 +287,7 @@ impl State {
                 if s.iracing { "running" } else { "closed" }
             ))
             .size(13),
-            text(if s.bridge_fresh() {
-                if s.bridge_running {
-                    format!("SimHub connected · {:.0} km/h", s.speed_kmh)
-                } else {
-                    "SimHub connected · no active game".into()
-                }
-            } else {
-                "Waiting for SimHub · minimum airflow inside the selected run mode".into()
-            })
-            .size(14),
+            text(self.bridge_display.label()).size(14),
             text(format!(
                 "Car · {}",
                 if active_estimate.car.is_empty() {
@@ -543,6 +598,106 @@ impl iced::widget::canvas::Program<Message> for CurvePlot<'_> {
             });
         }
         vec![frame.into_geometry()]
+    }
+}
+
+#[cfg(test)]
+mod bridge_display_tests {
+    use super::*;
+    #[test]
+    fn cached_heartbeat_expiry_does_not_flash_before_next_snapshot() {
+        let now = Instant::now();
+        let mut snapshot = Snapshot {
+            bridge_at: Some(now - Duration::from_millis(90)),
+            ..Snapshot::default()
+        };
+        let mut display = BridgeDisplay {
+            visible: BridgeStatus::Idle,
+            ..BridgeDisplay::default()
+        };
+        // Previously view() checked this aging snapshot every redraw, but read
+        // the worker's newer heartbeat only on the one-second UI tick.
+        assert_eq!(
+            BridgeStatus::at(&snapshot, now + Duration::from_millis(950)),
+            BridgeStatus::Waiting
+        );
+        display.observe(&snapshot, now + Duration::from_millis(950));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+        snapshot.bridge_at = Some(now + Duration::from_millis(990));
+        display.observe(&snapshot, now + Duration::from_secs(1));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+        assert!(display.pending.is_none());
+    }
+    #[test]
+    fn status_must_persist_for_half_second_and_recovery_cancels_pending_change() {
+        let now = Instant::now();
+        let mut display = BridgeDisplay {
+            visible: BridgeStatus::Idle,
+            ..BridgeDisplay::default()
+        };
+        let absent = Snapshot::default();
+        display.observe(&absent, now);
+        display.observe(&absent, now + Duration::from_millis(499));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+        let recovered = Snapshot {
+            bridge_at: Some(now + Duration::from_millis(499)),
+            ..Snapshot::default()
+        };
+        display.observe(&recovered, now + Duration::from_millis(499));
+        display.observe(&absent, now + Duration::from_millis(500));
+        display.observe(&absent, now + Duration::from_millis(999));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+        display.observe(&absent, now + Duration::from_millis(1000));
+        assert_eq!(display.visible, BridgeStatus::Waiting);
+        let fresh = Snapshot {
+            bridge_at: Some(now + Duration::from_millis(1000)),
+            ..Snapshot::default()
+        };
+        display.observe(&fresh, now + Duration::from_millis(1001));
+        display.observe(&fresh, now + Duration::from_millis(1501));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+    }
+    #[test]
+    fn game_status_is_debounced_but_speed_updates_without_restarting_timer() {
+        let now = Instant::now();
+        let mut display = BridgeDisplay {
+            visible: BridgeStatus::Idle,
+            ..BridgeDisplay::default()
+        };
+        let mut snapshot = Snapshot {
+            bridge_at: Some(now),
+            bridge_running: true,
+            speed_kmh: 40.,
+            ..Snapshot::default()
+        };
+        for ms in [0, 100, 200, 300, 400, 500] {
+            snapshot.bridge_at = Some(now + Duration::from_millis(ms));
+            snapshot.speed_kmh = 40. + ms as f64 / 10.;
+            display.observe(&snapshot, now + Duration::from_millis(ms));
+            assert_eq!(
+                display.visible,
+                if ms < 500 {
+                    BridgeStatus::Idle
+                } else {
+                    BridgeStatus::Running
+                }
+            );
+        }
+        assert_eq!(display.label(), "SimHub connected · 90 km/h");
+        snapshot.bridge_running = false;
+        snapshot.speed_kmh = 0.;
+        display.observe(&snapshot, now + Duration::from_millis(600));
+        assert_eq!(display.label(), "SimHub connected · 90 km/h");
+        display.observe(&snapshot, now + Duration::from_millis(1100));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+        snapshot.bridge_running = true;
+        display.observe(&snapshot, now + Duration::from_millis(1200));
+        // Switching candidate restarts the half-second timer.
+        display.observe(&Snapshot::default(), now + Duration::from_millis(1300));
+        display.observe(&Snapshot::default(), now + Duration::from_millis(1700));
+        assert_eq!(display.visible, BridgeStatus::Idle);
+        display.observe(&Snapshot::default(), now + Duration::from_millis(1800));
+        assert_eq!(display.visible, BridgeStatus::Waiting);
     }
 }
 

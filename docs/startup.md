@@ -20,6 +20,8 @@ The staged shortcut was copied through Explorer into the real per-user Programs 
 
 F15 and **Dashboard · F15** now toggle: open the desktop panel when closed, close the dashboard when visible. Closing uses SteamVR's compositor `system_dashboard_toggle` command through `vrcmd.exe`, then checks the dashboard visibility. Valve's developer describes this command [here](https://steamcommunity.com/app/250820/discussions/0/4036976070312856172/?l=russian). The gaze-click pulse remains exclusively on F14.
 
+F15 dashboard-close and F16 camera helper processes have a three-second deadline. A stalled helper is terminated and its exit checked for up to one further second; SteamVR and Pimax EVO are left running. Errors are shown in the companion, and commands are never retried automatically because a toggle may already have reached SteamVR. Output capture cannot block on a full pipe. This bounds the helper-process waits; it does not add timeouts to in-process OpenVR calls or prove that VRAM pressure caused a particular shortcut failure. Regression tests reproduce a stalled child, verify cleanup and a successful subsequent command, and check large-output failures.
+
 ## Post-commit delivery
 
 After every commit run `scripts/release.ps1` (or `just release`). It builds all release binaries after the commit, closes a running live app through its quit signal, overwrites the same files in `%LOCALAPPDATA%\Programs\Rig Companion`, verifies SHA-256 hashes and reopens the app if it was running. The main executable always remains `rig-companion.exe`. This workflow is required by the repository `AGENTS.md`.

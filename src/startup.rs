@@ -1,10 +1,11 @@
 //! Start the existing VR stack once; reconnecting does not relaunch apps the user closed.
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
+    io::{Read, Seek, SeekFrom},
     os::windows::process::CommandExt,
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
     sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
@@ -200,26 +201,77 @@ fn same_path(a: &Path, b: &Path) -> bool {
 }
 
 pub fn toggle_dashboard_closed() -> Result<()> {
-    let result = Command::new(runtime_dir()?.join("bin/win64/vrcmd.exe"))
-        .args(["--compositorcmd", "system_dashboard_toggle"])
-        .creation_flags(0x08000000)
-        .output()?;
-    ensure!(
-        result.status.success(),
-        "SteamVR dashboard toggle failed: {}",
-        String::from_utf8_lossy(&result.stderr)
-    );
-    Ok(())
+    compositor_command("system_dashboard_toggle", "dashboard toggle")
 }
 
 pub fn toggle_passthrough() -> Result<()> {
-    let result = Command::new(runtime_dir()?.join("bin/win64/vrcmd.exe"))
-        .args(["--compositorcmd", "camera_room_view_toggle"])
+    compositor_command("camera_room_view_toggle", "camera toggle")
+}
+
+fn compositor_command(command: &str, label: &str) -> Result<()> {
+    run_vr_helper(
+        Command::new(runtime_dir()?.join("bin/win64/vrcmd.exe")).args(["--compositorcmd", command]),
+        label,
+        Duration::from_secs(3),
+    )
+}
+
+fn run_vr_helper(command: &mut Command, label: &str, timeout: Duration) -> Result<()> {
+    // A file avoids filling a pipe while we poll for exit. Do not wait on inherited
+    // stdout/stderr handles: a child can exit without every writer closing them.
+    let mut stderr = tempfile::tempfile().context("Cannot capture SteamVR helper errors")?;
+    let mut child = command
         .creation_flags(0x08000000)
-        .output()?;
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::from(stderr.try_clone()?))
+        .spawn()
+        .with_context(|| format!("Cannot start SteamVR {label}"))?;
+    let deadline = Instant::now() + timeout;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(25));
+            }
+            result => {
+                // Terminate only our vrcmd helper, never SteamVR or the Pimax runtime.
+                child
+                    .kill()
+                    .with_context(|| format!("Cannot stop stalled SteamVR {label} helper"))?;
+                // Windows termination is asynchronous. Bound cleanup as well so a
+                // broken runtime cannot replace the original wait with a new one.
+                let cleanup_deadline = Instant::now() + Duration::from_secs(1);
+                while child
+                    .try_wait()
+                    .context("Cannot check stopped SteamVR helper")?
+                    .is_none()
+                {
+                    ensure!(
+                        Instant::now() < cleanup_deadline,
+                        "SteamVR {label} helper did not exit after termination; its outcome is unknown"
+                    );
+                    std::thread::sleep(Duration::from_millis(25));
+                }
+                if let Err(error) = result {
+                    return Err(error).context("Cannot check SteamVR helper status");
+                }
+                bail!(
+                    "SteamVR {label} timed out after {:.0} seconds. The command may already have taken effect; check the headset before retrying.",
+                    timeout.as_secs_f64()
+                );
+            }
+        }
+    };
+    // Keep failures readable even if SteamVR emitted a very large diagnostic log.
+    let length = stderr.metadata()?.len();
+    stderr.seek(SeekFrom::Start(length.saturating_sub(4096)))?;
+    let mut detail = Vec::new();
+    stderr.take(4096).read_to_end(&mut detail)?;
     ensure!(
-        result.status.success(),
-        "SteamVR rejected the camera toggle"
+        status.success(),
+        "SteamVR {label} failed ({status}): {}",
+        String::from_utf8_lossy(&detail).trim()
     );
     Ok(())
 }
@@ -247,6 +299,81 @@ pub fn quit_steamvr() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn helper_fixture(mode: &str, marker: &Path) -> Command {
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "startup::tests::vr_helper_fixture",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env("RIG_VR_HELPER_TEST_MODE", mode)
+            .env("RIG_VR_HELPER_TEST_MARKER", marker);
+        command
+    }
+
+    #[test]
+    #[ignore = "subprocess fixture invoked by the helper regression tests"]
+    fn vr_helper_fixture() {
+        use std::io::Write;
+        let mode = std::env::var("RIG_VR_HELPER_TEST_MODE").unwrap();
+        std::fs::write(
+            std::env::var_os("RIG_VR_HELPER_TEST_MARKER").unwrap(),
+            std::process::id().to_string(),
+        )
+        .unwrap();
+        if mode == "stall" {
+            std::thread::sleep(Duration::from_secs(5));
+        } else {
+            // Exceed pipe capacity on both streams: waiting before draining pipes can deadlock.
+            let noise = vec![b'x'; 256 * 1024];
+            std::io::stdout().write_all(&noise).unwrap();
+            std::io::stderr().write_all(&noise).unwrap();
+            if mode == "fail" {
+                eprintln!("fixture failure");
+                std::process::exit(23);
+            }
+        }
+    }
+
+    #[test]
+    fn stalled_vr_helper_times_out_and_next_command_succeeds() {
+        let dir = tempfile::tempdir().unwrap();
+        let marker = dir.path().join("pid");
+        let started = Instant::now();
+        let error = run_vr_helper(
+            &mut helper_fixture("stall", &marker),
+            "dashboard toggle",
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("timed out"), "{error:#}");
+        assert!(started.elapsed() < Duration::from_secs(3));
+        let pid: u32 = std::fs::read_to_string(&marker).unwrap().parse().unwrap();
+        let exe = std::env::current_exe().unwrap();
+        assert!(!process_matches(exe.file_name().unwrap().to_str().unwrap(), Some(pid)).unwrap());
+        run_vr_helper(
+            &mut helper_fixture("success", &marker),
+            "dashboard toggle",
+            Duration::from_secs(3),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn vr_helper_reports_failure_after_large_output() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = run_vr_helper(
+            &mut helper_fixture("fail", &dir.path().join("pid")),
+            "camera toggle",
+            Duration::from_secs(3),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("camera toggle failed"));
+        assert!(error.to_string().contains("fixture failure"));
+    }
     #[test]
     fn registration_compares_equivalent_paths() {
         let dir = tempfile::tempdir().unwrap();

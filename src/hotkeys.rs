@@ -61,7 +61,8 @@ impl Hotkeys {
                             return;
                         }
                     }
-                    let timer = SetTimer(std::ptr::null_mut(), 8, 10, None);
+                    // A windowless timer gets a system-assigned ID; use the returned value.
+                    let timer = SetTimer(std::ptr::null_mut(), 0, 10, None);
                     if timer == 0 {
                         for id in 1..=7 {
                             UnregisterHotKey(std::ptr::null_mut(), id);
@@ -83,7 +84,7 @@ impl Hotkeys {
                                 let _ = events_tx.send(HotkeyEvent::Shortcut(msg.wParam as u32));
                             }
                         } else if msg.message == WM_TIMER
-                            && msg.wParam == 8
+                            && msg.wParam == timer
                             && gaze_down
                             && GetAsyncKeyState(VK_F14.into()) >= 0
                         {
@@ -94,9 +95,7 @@ impl Hotkeys {
                     if gaze_down {
                         let _ = events_tx.send(HotkeyEvent::GazeUp);
                     }
-                    if timer != 0 {
-                        KillTimer(std::ptr::null_mut(), 8);
-                    }
+                    KillTimer(std::ptr::null_mut(), timer);
                     for id in 1..=7 {
                         UnregisterHotKey(std::ptr::null_mut(), id);
                     }
@@ -120,5 +119,55 @@ impl Drop for Hotkeys {
         if let Some(join) = self.join.take() {
             let _ = join.join();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+        INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, SendInput,
+    };
+
+    #[test]
+    #[ignore = "requires an interactive Windows desktop with unused global shortcuts"]
+    fn f14_press_and_release_are_both_delivered() {
+        let hotkeys = Hotkeys::start().unwrap();
+        let key = |flags| INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: VK_F14,
+                    dwFlags: flags,
+                    ..Default::default()
+                },
+            },
+        };
+        // SAFETY: SendInput receives initialized keyboard input structures.
+        unsafe {
+            assert_eq!(SendInput(1, &key(0), size_of::<INPUT>() as i32), 1);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        unsafe {
+            assert_eq!(
+                SendInput(1, &key(KEYEVENTF_KEYUP), size_of::<INPUT>() as i32),
+                1
+            );
+        }
+        assert_eq!(
+            hotkeys
+                .events
+                .recv_timeout(std::time::Duration::from_secs(2))
+                .unwrap(),
+            HotkeyEvent::GazeDown
+        );
+        assert_eq!(
+            hotkeys
+                .events
+                .recv_timeout(std::time::Duration::from_secs(2))
+                .unwrap(),
+            HotkeyEvent::GazeUp
+        );
     }
 }

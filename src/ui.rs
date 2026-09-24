@@ -10,6 +10,7 @@ use rig_companion::{
     calibration::validate_height,
     service::{Command, Snapshot, Worker},
 };
+use std::os::windows::process::CommandExt;
 use std::time::{Duration, Instant};
 
 const BG: Color = Color::from_rgb8(14, 14, 16);
@@ -60,6 +61,8 @@ pub struct App {
     eye_error: Option<String>,
     calibration_check_pending: bool,
     calibration_status: String,
+    pointer_calibration_running: bool,
+    pointer_calibration_status: String,
     _lock: std::fs::File,
 }
 
@@ -82,6 +85,8 @@ pub enum Message {
     EyeTick,
     EyeRead(Result<rig_companion::eyes::Reading, String>),
     CheckEyeCalibration,
+    LaunchEyePointerCalibration,
+    EyePointerCalibrationDone(Result<String, String>),
     EyeCalibrationResult(String),
     Tick,
     Connect,
@@ -157,6 +162,8 @@ impl App {
             eye_error: None,
             calibration_check_pending: false,
             calibration_status: "Check whether Pimax exposes a tracker with 3D calibration and a retrievable backup. This check does not change your calibration.".into(),
+            pointer_calibration_running: false,
+            pointer_calibration_status: "No pointer alignment is running.".into(),
             _lock: lock,
         }
     }
@@ -338,6 +345,43 @@ impl App {
                         Message::EyeCalibrationResult,
                     );
                 }
+            }
+            Message::LaunchEyePointerCalibration => {
+                if self.pointer_calibration_running {
+                    return Task::none();
+                }
+                self.pointer_calibration_running = true;
+                self.pointer_calibration_status =
+                    "Look at each dot in the headset. Press Escape to cancel.".into();
+                return Task::perform(
+                    async {
+                        match tokio::task::spawn_blocking(|| {
+                            let exe = std::env::current_exe()
+                                .map(|exe| exe.parent().unwrap().join("eye-calibrate.exe"))
+                                .map_err(|error| error.to_string())?;
+                            let output = std::process::Command::new(exe)
+                                .creation_flags(0x08000000)
+                                .output()
+                                .map_err(|error| error.to_string())?;
+                            if output.status.success() {
+                                Ok("Pointer alignment saved. Game eye tracking is unchanged."
+                                    .into())
+                            } else {
+                                Err(String::from_utf8_lossy(&output.stderr).trim().to_owned())
+                            }
+                        })
+                        .await
+                        {
+                            Ok(result) => result,
+                            Err(error) => Err(error.to_string()),
+                        }
+                    },
+                    Message::EyePointerCalibrationDone,
+                );
+            }
+            Message::EyePointerCalibrationDone(result) => {
+                self.pointer_calibration_running = false;
+                self.pointer_calibration_status = result.unwrap_or_else(|error| error);
             }
             Message::EyeCalibrationResult(status) => {
                 self.calibration_check_pending = false;
@@ -1119,6 +1163,14 @@ impl App {
             panel(column![
                 row![text(if paused { "Preview paused while unfocused".into() } else { age }).size(15), Space::new().width(Fill), checkbox(self.keep_eyes_live).label("Keep live in VR").on_toggle(Message::KeepEyesLive)].spacing(16),
                 text(self.eye_error.as_deref().unwrap_or("4 updates/second from the custom driver. File freshness does not prove a new eye-camera sample; the driver can reuse cached data. These are gaze estimates, not eye images.")).size(14).color(MUTED),
+            ].spacing(12)),
+            panel(column![
+                section("EYE POINTER ALIGNMENT", "Correct the SteamVR dashboard pointer without changing game gaze"),
+                text("Look at nine targets in the headset. The app measures gaze at each one and applies a smooth spatial correction to the F19 pointer only.").size(14).color(MUTED),
+                button(if self.pointer_calibration_running { "Aligning…" } else { "Align eye pointer in VR" })
+                    .on_press_maybe((!self.state.demo && self.state.connected && !self.pointer_calibration_running).then_some(Message::LaunchEyePointerCalibration))
+                    .style(secondary).padding(12),
+                text(&self.pointer_calibration_status).size(14).color(MUTED),
             ].spacing(12)),
             panel(column![
                 section("EYE CALIBRATION", "Native tracker calibration"),

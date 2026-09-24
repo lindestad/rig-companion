@@ -21,6 +21,89 @@ pub struct SteamVr {
     _thread_bound: PhantomData<Rc<()>>,
 }
 
+pub struct EyeCalibrationOverlay<'a> {
+    _owner: &'a SteamVr,
+    table: *const vr::VR_IVROverlay_FnTable,
+    handle: vr::VROverlayHandle_t,
+}
+
+impl EyeCalibrationOverlay<'_> {
+    pub fn show_target(&self, target: [f64; 2], step: usize, total: usize) -> Result<()> {
+        const SIZE: usize = 512;
+        const DISTANCE: f64 = 1.6;
+        const WIDTH: f64 = 1.2;
+        let mut pixels = vec![0u8; SIZE * SIZE * 4];
+        for rgba in pixels.as_chunks_mut::<4>().0 {
+            rgba.copy_from_slice(&[15, 15, 24, 220]);
+        }
+        let x = ((0.5 + target[0] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
+        let y = ((0.5 - target[1] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
+        draw_disc(&mut pixels, SIZE, x, y, 20, [200, 177, 255, 255]);
+        draw_disc(&mut pixels, SIZE, x, y, 8, [250, 248, 255, 255]);
+        for marker in 0..total {
+            let mx = (SIZE as f64 * (0.24 + 0.52 * marker as f64 / (total - 1) as f64)) as i32;
+            let color = if marker < step {
+                [115, 225, 170, 255]
+            } else if marker == step {
+                [250, 248, 255, 255]
+            } else {
+                [88, 85, 105, 255]
+            };
+            draw_disc(&mut pixels, SIZE, mx, SIZE as i32 - 35, 6, color);
+        }
+        // SAFETY: the active OpenVR context owns this table, and SetOverlayRaw copies the RGBA buffer.
+        unsafe {
+            let overlay = &*self.table;
+            let error = overlay.SetOverlayRaw.context("Missing overlay image API")?(
+                self.handle,
+                pixels.as_mut_ptr().cast(),
+                SIZE as u32,
+                SIZE as u32,
+                4,
+            );
+            ensure!(error == 0, "SteamVR rejected calibration target: {error}");
+            let error = overlay.ShowOverlay.context("Missing overlay show API")?(self.handle);
+            ensure!(
+                error == 0,
+                "SteamVR did not show calibration target: {error}"
+            );
+        }
+        Ok(())
+    }
+}
+
+impl Drop for EyeCalibrationOverlay<'_> {
+    fn drop(&mut self) {
+        // SAFETY: overlay and context remain owned by this process until this value is dropped.
+        unsafe {
+            if let Some(hide) = (*self.table).HideOverlay {
+                hide(self.handle);
+            }
+            if let Some(destroy) = (*self.table).DestroyOverlay {
+                destroy(self.handle);
+            }
+        }
+    }
+}
+
+fn draw_disc(
+    pixels: &mut [u8],
+    size: usize,
+    center_x: i32,
+    center_y: i32,
+    radius: i32,
+    color: [u8; 4],
+) {
+    for y in (center_y - radius).max(0)..=(center_y + radius).min(size as i32 - 1) {
+        for x in (center_x - radius).max(0)..=(center_x + radius).min(size as i32 - 1) {
+            if (x - center_x).pow(2) + (y - center_y).pow(2) <= radius.pow(2) {
+                let index = (y as usize * size + x as usize) * 4;
+                pixels[index..index + 4].copy_from_slice(&color);
+            }
+        }
+    }
+}
+
 static CONTEXT_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone)]
@@ -32,26 +115,82 @@ pub struct Reading {
 }
 
 impl SteamVr {
+    pub fn eye_calibration_overlay(&self) -> Result<EyeCalibrationOverlay<'_>> {
+        // SAFETY: IVROverlay_028 is already used by this process and lives with this OpenVR context.
+        unsafe {
+            let table = table::<vr::VR_IVROverlay_FnTable>(c"FnTable:IVROverlay_028")?;
+            let overlay = &*table;
+            let mut handle = 0;
+            let error = overlay
+                .CreateOverlay
+                .context("Missing overlay create API")?(
+                c"rigcompanion.eye-pointer-calibration".as_ptr().cast_mut(),
+                c"Eye pointer calibration".as_ptr().cast_mut(),
+                &mut handle,
+            );
+            ensure!(
+                error == 0,
+                "SteamVR could not create calibration view: {error}"
+            );
+            let view = EyeCalibrationOverlay {
+                _owner: self,
+                table,
+                handle,
+            };
+            let error = overlay
+                .SetOverlayWidthInMeters
+                .context("Missing overlay width API")?(handle, 1.2);
+            ensure!(
+                error == 0,
+                "SteamVR rejected calibration view size: {error}"
+            );
+            let mut pose = vr::HmdMatrix34_t {
+                m: [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, -1.6],
+                ],
+            };
+            let error = overlay
+                .SetOverlayTransformTrackedDeviceRelative
+                .context("Missing headset overlay transform API")?(
+                handle, 0, &mut pose
+            );
+            ensure!(
+                error == 0,
+                "SteamVR rejected calibration view position: {error}"
+            );
+            Ok(view)
+        }
+    }
     pub fn connect() -> Result<Self> {
+        Self::connect_as(vr::EVRApplicationType_VRApplication_Background)
+    }
+
+    pub fn connect_overlay() -> Result<Self> {
+        Self::connect_as(vr::EVRApplicationType_VRApplication_Overlay)
+    }
+
+    fn connect_as(application_type: vr::EVRApplicationType) -> Result<Self> {
         ensure!(
             CONTEXT_ACTIVE
                 .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
                 .is_ok(),
             "An OpenVR context is already active in this process"
         );
-        let result = Self::connect_inner();
+        let result = Self::connect_inner(application_type);
         if result.is_err() {
             CONTEXT_ACTIVE.store(false, Ordering::SeqCst);
         }
         result
     }
 
-    fn connect_inner() -> Result<Self> {
+    fn connect_inner(application_type: vr::EVRApplicationType) -> Result<Self> {
         // SAFETY: process owns a single OpenVR context; callers serialize access.
         unsafe {
             ensure!(vr::VR_IsRuntimeInstalled(), "SteamVR is not installed");
             let mut error = 0;
-            vr::VR_InitInternal(&mut error, vr::EVRApplicationType_VRApplication_Background);
+            vr::VR_InitInternal(&mut error, application_type);
             if error != 0 {
                 let desc = vr::VR_GetVRInitErrorAsEnglishDescription(error);
                 let message = if desc.is_null() {
@@ -453,6 +592,35 @@ impl SteamVr {
             "ok:off" => Ok(false),
             _ => anyhow::bail!("Headset eye pointer toggle rejected: {response}"),
         }
+    }
+
+    pub fn headset_gaze_sample(&self) -> Result<Option<(u64, f64, f64)>> {
+        let response = self.headset_bridge_request(c"rigcompanion:gaze-sample:v1")?;
+        if response == "error:stale-gaze" {
+            return Ok(None);
+        }
+        let mut parts = response.split(':');
+        ensure!(
+            parts.next() == Some("ok"),
+            "Eye sample unavailable: {response}"
+        );
+        let sequence: u64 = parts.next().context("Missing gaze sequence")?.parse()?;
+        let x: f64 = parts.next().context("Missing gaze X")?.parse()?;
+        let y: f64 = parts.next().context("Missing gaze Y")?.parse()?;
+        ensure!(
+            parts.next().is_none() && x.is_finite() && y.is_finite(),
+            "Invalid gaze sample"
+        );
+        Ok(Some((sequence, x, y)))
+    }
+
+    pub fn reload_gaze_pointer_calibration(&self) -> Result<()> {
+        let response = self.headset_bridge_request(c"rigcompanion:gaze-calibration-reload:v1")?;
+        ensure!(
+            response == "ok:reloaded",
+            "Eye pointer calibration not loaded: {response}"
+        );
+        Ok(())
     }
 
     pub fn gamepad_enabled(&self) -> Result<bool> {

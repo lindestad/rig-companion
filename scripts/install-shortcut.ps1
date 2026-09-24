@@ -3,7 +3,7 @@ $repoPath = Split-Path -Parent $PSScriptRoot
 $installDir = Join-Path $env:LOCALAPPDATA 'Programs\Rig Companion'
 $exePath = Join-Path $installDir 'rig-companion.exe'
 $buildDir = Join-Path $repoPath 'target\release'
-foreach ($file in @('rig-companion.exe', 'rigctl.exe', 'eye-probe.exe')) {
+foreach ($file in @('rig-companion.exe', 'rigctl.exe', 'eye-probe.exe', 'eye-calibrate.exe')) {
     if (-not (Test-Path -LiteralPath (Join-Path $buildDir $file))) { throw 'Run cargo build --release --bins first.' }
 }
 if (Get-Process rig-companion -ErrorAction SilentlyContinue | Where-Object Path -EQ $exePath) {
@@ -21,7 +21,7 @@ if ((Test-Path -LiteralPath $shortcutPath) -and $existingShortcut.TargetPath -no
     throw "A shortcut with a different target already exists: $shortcutPath"
 }
 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-foreach ($file in @('rig-companion.exe', 'rigctl.exe', 'eye-probe.exe')) {
+foreach ($file in @('rig-companion.exe', 'rigctl.exe', 'eye-probe.exe', 'eye-calibrate.exe')) {
     Copy-Item -LiteralPath (Join-Path $buildDir $file) -Destination (Join-Path $installDir $file) -Force
     $installedFile = Get-Item -LiteralPath (Join-Path $installDir $file)
     $installedFile.Attributes = $installedFile.Attributes -band (-bnot [IO.FileAttributes]::NotContentIndexed)

@@ -34,7 +34,7 @@ try {
     }
 
     & (Join-Path $PSScriptRoot 'install-shortcut.ps1')
-    foreach ($file in @('rig-companion.exe', 'rigctl.exe', 'eye-probe.exe')) {
+    foreach ($file in @('rig-companion.exe', 'rigctl.exe', 'eye-probe.exe', 'eye-calibrate.exe')) {
         $builtHash = (Get-FileHash -LiteralPath (Join-Path $buildDir $file) -Algorithm SHA256).Hash
         $installedHash = (Get-FileHash -LiteralPath (Join-Path $installDir $file) -Algorithm SHA256).Hash
         if ($builtHash -ne $installedHash) { throw "Installed file does not match release build: $file" }

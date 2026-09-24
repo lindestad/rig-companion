@@ -2,6 +2,7 @@ pub mod calibration;
 pub mod distortion;
 pub mod driver_settings;
 pub mod eye_calibration;
+pub mod eye_pointer_calibration;
 pub mod eyes;
 pub mod ipc;
 pub mod profile;

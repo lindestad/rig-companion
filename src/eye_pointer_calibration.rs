@@ -3,6 +3,32 @@ use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+pub mod capture;
+pub mod validation;
+
+/// Separation between two head-relative rays represented as (x/z, y/z).
+pub fn angular_error(a: [f64; 2], b: [f64; 2]) -> f64 {
+    let dot = a[0] * b[0] + a[1] * b[1] + 1.0;
+    let length = a[0].hypot(a[1]).hypot(1.0) * b[0].hypot(b[1]).hypot(1.0);
+    (dot / length).clamp(-1.0, 1.0).acos().to_degrees()
+}
+
+pub fn median(samples: &[[f64; 2]]) -> [f64; 2] {
+    assert!(!samples.is_empty());
+    let mut axes = [
+        Vec::with_capacity(samples.len()),
+        Vec::with_capacity(samples.len()),
+    ];
+    for sample in samples {
+        axes[0].push(sample[0]);
+        axes[1].push(sample[1]);
+    }
+    axes.map(|mut values| {
+        values.sort_by(f64::total_cmp);
+        (values[(values.len() - 1) / 2] + values[values.len() / 2]) * 0.5
+    })
+}
+
 pub const TARGET_COUNT: usize = 17;
 const BANDWIDTH: f64 = 0.32;
 
@@ -24,6 +50,34 @@ pub struct Profile {
 }
 
 impl Profile {
+    /// Match the installed v3 driver's profile constraints before comparing it.
+    pub fn check(&self) -> Result<()> {
+        ensure!(
+            self.version == 3
+                && self.bandwidth.is_finite()
+                && (0.2..=0.6).contains(&self.bandwidth)
+                && self
+                    .scale
+                    .iter()
+                    .all(|v| v.is_finite() && (0.1..=1.0).contains(v))
+                && self.bounds.iter().all(|v| v.is_finite() && v.abs() <= 2.0)
+                && self.bounds[0] < self.bounds[1]
+                && self.bounds[2] < self.bounds[3]
+                && self
+                    .observed
+                    .iter()
+                    .flatten()
+                    .all(|v| v.is_finite() && v.abs() <= 1.0)
+                && self
+                    .offsets
+                    .iter()
+                    .flatten()
+                    .all(|v| v.is_finite() && v.abs() <= 0.18),
+            "Saved pointer alignment is not a valid v3 profile"
+        );
+        Ok(())
+    }
+
     pub fn corrected(&self, gaze: [f64; 2]) -> [f64; 2] {
         let x = gaze[0].clamp(self.bounds[0], self.bounds[1]);
         let y = gaze[1].clamp(self.bounds[2], self.bounds[3]);

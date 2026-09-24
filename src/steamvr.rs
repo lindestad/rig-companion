@@ -79,7 +79,7 @@ impl EyeCalibrationOverlay<'_> {
             HEIGHT,
             x,
             y,
-            if focused { 9 } else { 6 } * PIXEL_SCALE,
+            6 * PIXEL_SCALE,
             [250, 248, 255, 255],
         );
         for marker in 0..total {

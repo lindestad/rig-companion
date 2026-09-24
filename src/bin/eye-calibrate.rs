@@ -1,10 +1,17 @@
 use anyhow::{Context, Result, ensure};
 use rig_companion::{
-    eye_pointer_calibration::{self, Target},
+    eye_pointer_calibration::{
+        self, Profile, Target, angular_error,
+        capture::{CaptureWindow, Fixation},
+        validation::{self, Report},
+    },
     steamvr::{EyeCalibrationOverlay, SteamVr},
 };
 use std::{
-    fs, thread,
+    fs,
+    io::Write,
+    path::Path,
+    thread,
     time::{Duration, Instant},
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_ESCAPE};
@@ -23,7 +30,9 @@ fn targets() -> Vec<[f64; 2]> {
 fn main() -> Result<()> {
     let preview = std::env::args().any(|argument| argument == "--preview");
     println!("Eye pointer calibration: wear the headset and look at each purple dot.");
-    println!("Seventeen targets take about a minute. Press Escape to cancel.");
+    println!(
+        "Seventeen alignment targets, then seven checks, take about a minute. Press Escape to cancel."
+    );
     let vr = SteamVr::connect_overlay()?;
     let target_positions = targets();
     if preview {
@@ -32,6 +41,17 @@ fn main() -> Result<()> {
         thread::sleep(Duration::from_secs(6));
         return Ok(());
     }
+    let path = eye_pointer_calibration::profile_path()?;
+    let previous = read_profile(&path)?;
+    let current = previous
+        .as_deref()
+        .map(|bytes| -> Result<Profile> {
+            let profile: Profile = serde_json::from_slice(bytes)?;
+            profile.check()?;
+            Ok(profile)
+        })
+        .transpose()
+        .context("Cannot compare the saved pointer alignment; it was kept unchanged")?;
     ensure!(
         vr.headset_gaze_sample()?.is_some(),
         "No fresh gaze. Restore eye tracking before calibrating."
@@ -46,33 +66,108 @@ fn main() -> Result<()> {
     for (index, expected) in target_positions.iter().copied().enumerate() {
         overlay.show_target(&target_positions, index, false)?;
         println!("Target {} of {}", index + 1, target_positions.len());
-        let observed = collect(
+        let fixation = collect(
             &vr,
             &overlay,
             &target_positions,
             index,
             if index == 0 { 2000 } else { 650 },
+            true,
         )?;
-        targets.push(Target { observed, expected });
+        targets.push(Target {
+            observed: fixation.center,
+            expected,
+        });
+    }
+    let profile = eye_pointer_calibration::fit(&targets).context("Previous alignment kept")?;
+    let checks = validation::positions();
+    let mut report = Report {
+        points: Vec::new(),
+        center_shift_deg: 0.0,
+    };
+    println!(
+        "Seven fresh checks follow. Keep looking at each center dot; the new alignment is not saved yet."
+    );
+    for (index, expected) in checks.iter().copied().enumerate() {
+        overlay.show_target(&checks, index, false)?;
+        println!("Validation {} of {}", index + 1, checks.len());
+        let fixation = collect(&vr, &overlay, &checks, index, 650, false)?;
+        let comparison =
+            validation::compare(expected, &fixation.samples, &profile, current.as_ref())?;
+        let describe = |m: validation::Metrics| {
+            format!(
+                "error {:.2}°, bias {:.2}°, spread (90%) {:.2}°",
+                m.error_deg, m.bias_deg, m.spread_deg
+            )
+        };
+        println!(
+            "Check {}: new {}; saved {}; raw {}",
+            index + 1,
+            describe(comparison.candidate),
+            comparison
+                .current
+                .map(describe)
+                .unwrap_or_else(|| "none".into()),
+            describe(comparison.raw)
+        );
+        if index == checks.len() - 1 {
+            report.center_shift_deg = angular_error(targets[0].observed, fixation.center);
+        }
+        report.points.push(comparison);
     }
     drop(overlay);
-    let profile = eye_pointer_calibration::fit(&targets)?;
-    let path = eye_pointer_calibration::profile_path()?;
-    let previous = fs::read(&path).ok();
-    fs::create_dir_all(path.parent().context("Missing profile folder")?)?;
-    fs::write(&path, serde_json::to_vec_pretty(&profile)?)?;
-    if let Err(error) = vr.reload_gaze_pointer_calibration() {
-        match previous {
-            Some(bytes) => {
-                let _ = fs::write(&path, bytes);
-            }
-            None => {
-                let _ = fs::remove_file(&path);
-            }
-        }
-        return Err(error.context("The previous pointer calibration was restored"));
+    // All acceptance checks precede any profile write or driver reload.
+    report.accept()?;
+    save_profile(&path, previous.as_deref(), &profile, || {
+        vr.reload_gaze_pointer_calibration()
+    })?;
+    // The GUI displays this final line; detailed per-target diagnostics stay on stdout.
+    println!(
+        "Pointer alignment saved. {} Game eye tracking is unchanged.",
+        report.summary()
+    );
+    Ok(())
+}
+
+fn read_profile(path: &Path) -> Result<Option<Vec<u8>>> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error).context("Cannot read the saved alignment; it was kept unchanged"),
     }
-    println!("Dashboard eye pointer calibrated. Game eye tracking is unchanged.");
+}
+
+fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
+    let parent = path.parent().context("Missing profile folder")?;
+    fs::create_dir_all(parent)?;
+    let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
+    temporary.write_all(bytes)?;
+    temporary.as_file().sync_all()?;
+    temporary.persist(path)?;
+    Ok(())
+}
+
+fn save_profile(
+    path: &Path,
+    previous: Option<&[u8]>,
+    profile: &Profile,
+    reload: impl FnOnce() -> Result<()>,
+) -> Result<()> {
+    ensure!(
+        read_profile(path)?.as_deref() == previous,
+        "Saved alignment changed while calibrating. It was kept; start again."
+    );
+    atomic_write(path, &serde_json::to_vec_pretty(profile)?)?;
+    if let Err(error) = reload() {
+        let restored = match previous {
+            Some(bytes) => atomic_write(path, bytes),
+            None => fs::remove_file(path).map_err(Into::into),
+        };
+        restored.context("Driver reload failed and the previous profile could not be restored")?;
+        return Err(
+            error.context("Driver reload failed; the previous profile was restored on disk")
+        );
+    }
     Ok(())
 }
 
@@ -94,79 +189,111 @@ fn collect(
     positions: &[[f64; 2]],
     index: usize,
     settle_ms: u64,
-) -> Result<[f64; 2]> {
-    let started = Instant::now();
-    let expected = positions[index];
-    let settle = Duration::from_millis(settle_ms);
-    let mut last_sequence = None;
-    let mut samples = Vec::new();
-    let mut sample_started = None;
-    let mut near_count = 0;
-    let mut away_count = 0;
-    let mut focused = false;
-    while started.elapsed() < settle + Duration::from_secs(8) {
-        // SAFETY: read-only keyboard state; no keyboard hooks are installed.
-        if unsafe { GetAsyncKeyState(VK_ESCAPE.into()) < 0 } {
-            anyhow::bail!("Calibration cancelled. Previous profile was kept.");
+    acquisition_gate: bool,
+) -> Result<Fixation> {
+    // Retry this target once, rather than throwing away the entire run for one blink.
+    for attempt in 0..2 {
+        wait_or_cancel(Duration::from_millis(if attempt == 0 {
+            settle_ms
+        } else {
+            650
+        }))?;
+        let started = Instant::now();
+        let mut capture = CaptureWindow::new(acquisition_gate.then_some(positions[index]));
+        let mut focused = false;
+        let mut last_sequence = None;
+        let mut polls = 0;
+        let mut fresh = 0;
+        while started.elapsed() < Duration::from_secs(8) {
+            // SAFETY: read-only keyboard state; no keyboard hooks are installed.
+            if unsafe { GetAsyncKeyState(VK_ESCAPE.into()) < 0 } {
+                anyhow::bail!("Calibration cancelled. Previous profile was kept.");
+            }
+            let reading = vr.headset_gaze_sample()?;
+            polls += 1;
+            if let Some((sequence, _, _)) = reading
+                && last_sequence != Some(sequence)
+            {
+                fresh += 1;
+                last_sequence = Some(sequence);
+            }
+            let fixation = capture.poll(started.elapsed(), reading);
+            if capture.focused() != focused {
+                focused = capture.focused();
+                overlay.show_target(positions, index, focused)?;
+                capture.discard_window();
+            } else if let Some(fixation) = fixation {
+                println!(
+                    "Captured {} stable samples; {fresh}/{polls} polls had new gaze.",
+                    fixation.samples.len()
+                );
+                return Ok(fixation);
+            }
+            thread::sleep(Duration::from_millis(25));
         }
-        if let Some((sequence, x, y)) = vr.headset_gaze_sample()?
-            && last_sequence != Some(sequence)
-        {
-            last_sequence = Some(sequence);
-            let dx = (x - expected[0]) / 0.16;
-            let dy = (y - expected[1]) / 0.13;
-            let near = dx * dx + dy * dy < 1.0;
-            if near {
-                near_count += 1;
-                away_count = 0;
-            } else {
-                away_count += 1;
-                near_count = 0;
-            }
-            if !focused && near_count >= 5 {
-                focused = true;
-                overlay.show_target(positions, index, true)?;
-            } else if focused && away_count >= 8 {
-                focused = false;
-                samples.clear();
-                sample_started = None;
-                overlay.show_target(positions, index, false)?;
-            }
-            if focused && near && started.elapsed() >= settle {
-                sample_started.get_or_insert_with(Instant::now);
-                samples.push([x, y]);
-            }
+        ensure!(
+            fresh > 0,
+            "No fresh gaze on target {}. Restore eye tracking and try again. Previous alignment kept.",
+            index + 1
+        );
+        if attempt == 0 {
+            println!(
+                "Retrying target {}: keep looking at its small center dot.",
+                index + 1
+            );
+            overlay.show_target(positions, index, false)?;
         }
-        if samples.len() >= 35
-            && sample_started
-                .is_some_and(|start: Instant| start.elapsed() >= Duration::from_millis(1400))
-        {
-            if let Ok(center) = stable_median(&samples) {
-                return Ok(center);
-            }
-            samples.drain(..20);
-        }
-        thread::sleep(Duration::from_millis(25));
     }
-    anyhow::bail!("Gaze did not settle on a target. Previous profile was kept.")
+    anyhow::bail!(
+        "Gaze did not stay steady on target {} after a retry. Check headset fit and look at the small center dot. Previous alignment kept.",
+        index + 1
+    )
 }
 
-fn stable_median(samples: &[[f64; 2]]) -> Result<[f64; 2]> {
-    ensure!(samples.len() >= 25, "Not enough gaze samples");
-    let mut xs = samples.iter().map(|sample| sample[0]).collect::<Vec<_>>();
-    let mut ys = samples.iter().map(|sample| sample[1]).collect::<Vec<_>>();
-    xs.sort_by(f64::total_cmp);
-    ys.sort_by(f64::total_cmp);
-    let center = [xs[xs.len() / 2], ys[ys.len() / 2]];
-    let stable = samples
-        .iter()
-        .filter(|sample| {
-            (sample[0] - center[0]).abs() < 0.075 && (sample[1] - center[1]).abs() < 0.075
-        })
-        .count();
-    ensure!(
-        stable >= samples.len() * 3 / 4,
-        "Eye movement was too large for one target; try again"
-    );
-    Ok(center)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn failed_reload_restores_exact_previous_bytes() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("profile.json");
+        let previous = b"previous profile bytes";
+        fs::write(&path, previous).unwrap();
+        let profile = test_profile();
+        assert!(
+            save_profile(&path, Some(previous), &profile, || anyhow::bail!(
+                "reload failed"
+            ))
+            .is_err()
+        );
+        assert_eq!(fs::read(path).unwrap(), previous);
+    }
+
+    fn test_profile() -> Profile {
+        let points = targets()
+            .into_iter()
+            .map(|expected| Target {
+                observed: expected,
+                expected,
+            })
+            .collect::<Vec<_>>();
+        eye_pointer_calibration::fit(&points).unwrap()
+    }
+
+    #[test]
+    fn failed_first_reload_leaves_no_profile_and_concurrent_change_is_preserved() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("profile.json");
+        assert!(
+            save_profile(&path, None, &test_profile(), || anyhow::bail!(
+                "reload failed"
+            ))
+            .is_err()
+        );
+        assert!(!path.exists());
+        fs::write(&path, b"changed elsewhere").unwrap();
+        assert!(save_profile(&path, None, &test_profile(), || panic!("must not reload")).is_err());
+        assert_eq!(fs::read(path).unwrap(), b"changed elsewhere");
+    }
 }

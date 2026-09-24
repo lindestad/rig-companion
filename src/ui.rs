@@ -364,8 +364,13 @@ impl App {
                                 .output()
                                 .map_err(|error| error.to_string())?;
                             if output.status.success() {
-                                Ok("Pointer alignment saved. Game eye tracking is unchanged."
-                                    .into())
+                                Ok(String::from_utf8_lossy(&output.stdout)
+                                    .lines()
+                                    .last()
+                                    .unwrap_or(
+                                        "Pointer alignment saved. Game eye tracking is unchanged.",
+                                    )
+                                    .to_owned())
                             } else {
                                 Err(String::from_utf8_lossy(&output.stderr).trim().to_owned())
                             }
@@ -1166,7 +1171,7 @@ impl App {
             ].spacing(12)),
             panel(column![
                 section("EYE POINTER ALIGNMENT", "Correct the SteamVR dashboard pointer without changing game gaze"),
-                text("Look at the center target, then two rings of targets in the headset. The app measures gaze at each one and applies a smooth spatial correction to the F19 pointer only.").size(14).color(MUTED),
+                text("Look at the center dot, then two rings and seven check targets in the headset. Allow about a minute. Fresh checks compare the new alignment with your saved alignment before changing the F19 pointer.").size(14).color(MUTED),
                 button(if self.pointer_calibration_running { "Aligning…" } else { "Align eye pointer in VR" })
                     .on_press_maybe((!self.state.demo && self.state.connected && !self.pointer_calibration_running).then_some(Message::LaunchEyePointerCalibration))
                     .style(secondary).padding(12),

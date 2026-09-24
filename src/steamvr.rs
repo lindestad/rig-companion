@@ -29,7 +29,7 @@ pub struct EyeCalibrationOverlay<'a> {
 
 impl EyeCalibrationOverlay<'_> {
     pub fn show_target(&self, target: [f64; 2], step: usize, total: usize) -> Result<()> {
-        const SIZE: usize = 512;
+        const SIZE: usize = 2048;
         const DISTANCE: f64 = 1.6;
         const WIDTH: f64 = 1.6;
         let mut pixels = vec![0u8; SIZE * SIZE * 4];
@@ -38,8 +38,8 @@ impl EyeCalibrationOverlay<'_> {
         }
         let x = ((0.5 + target[0] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
         let y = ((0.5 - target[1] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
-        draw_disc(&mut pixels, SIZE, x, y, 20, [200, 177, 255, 255]);
-        draw_disc(&mut pixels, SIZE, x, y, 8, [250, 248, 255, 255]);
+        draw_disc(&mut pixels, SIZE, x, y, 80, [200, 177, 255, 255]);
+        draw_disc(&mut pixels, SIZE, x, y, 32, [250, 248, 255, 255]);
         for marker in 0..total {
             let mx = (SIZE as f64 * (0.24 + 0.52 * marker as f64 / (total - 1) as f64)) as i32;
             let color = if marker < step {
@@ -49,7 +49,7 @@ impl EyeCalibrationOverlay<'_> {
             } else {
                 [88, 85, 105, 255]
             };
-            draw_disc(&mut pixels, SIZE, mx, SIZE as i32 - 35, 6, color);
+            draw_disc(&mut pixels, SIZE, mx, SIZE as i32 - 140, 24, color);
         }
         // SAFETY: the active OpenVR context owns this table, and SetOverlayRaw copies the RGBA buffer.
         unsafe {

@@ -9,34 +9,26 @@ use std::{
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_ESCAPE};
 
-const TARGETS: [[f64; 2]; 17] = [
-    [0.0, 0.0],
-    [-0.25, 0.15],
-    [0.0, 0.15],
-    [0.25, 0.15],
-    [0.25, 0.0],
-    [0.25, -0.15],
-    [0.0, -0.15],
-    [-0.25, -0.15],
-    [-0.25, 0.0],
-    [-0.50, 0.30],
-    [0.0, 0.30],
-    [0.50, 0.30],
-    [0.50, 0.0],
-    [0.50, -0.30],
-    [0.0, -0.30],
-    [-0.50, -0.30],
-    [-0.50, 0.0],
-];
+fn targets() -> Vec<[f64; 2]> {
+    let mut points = vec![[0.0, 0.0]];
+    for [horizontal, vertical] in [[0.25, 0.12], [0.50, 0.24]] {
+        for step in 0..8 {
+            let angle = step as f64 * std::f64::consts::FRAC_PI_4;
+            points.push([horizontal * angle.cos(), vertical * angle.sin()]);
+        }
+    }
+    points
+}
 
 fn main() -> Result<()> {
     let preview = std::env::args().any(|argument| argument == "--preview");
     println!("Eye pointer calibration: wear the headset and look at each purple dot.");
     println!("Seventeen targets take about a minute. Press Escape to cancel.");
     let vr = SteamVr::connect_overlay()?;
+    let target_positions = targets();
     if preview {
         let overlay = vr.eye_calibration_overlay()?;
-        overlay.show_target([0.0, 0.0], 0, TARGETS.len())?;
+        overlay.show_target(&target_positions, 0)?;
         thread::sleep(Duration::from_secs(6));
         return Ok(());
     }
@@ -51,9 +43,9 @@ fn main() -> Result<()> {
     wait_or_cancel(Duration::from_secs(5))?;
     let overlay = vr.eye_calibration_overlay()?;
     let mut targets = Vec::new();
-    for (index, expected) in TARGETS.into_iter().enumerate() {
-        overlay.show_target(expected, index, TARGETS.len())?;
-        println!("Target {} of {}", index + 1, TARGETS.len());
+    for (index, expected) in target_positions.iter().copied().enumerate() {
+        overlay.show_target(&target_positions, index)?;
+        println!("Target {} of {}", index + 1, target_positions.len());
         let observed = collect(&vr, if index == 0 { 2000 } else { 650 })?;
         targets.push(Target { observed, expected });
     }

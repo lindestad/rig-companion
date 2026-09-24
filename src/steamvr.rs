@@ -28,21 +28,31 @@ pub struct EyeCalibrationOverlay<'a> {
 }
 
 impl EyeCalibrationOverlay<'_> {
-    pub fn show_target(&self, target: [f64; 2], step: usize, total: usize) -> Result<()> {
-        const SIZE: usize = 2048;
+    pub fn show_target(&self, positions: &[[f64; 2]], step: usize) -> Result<()> {
+        let total = positions.len();
+        ensure!(total >= 2 && step < total, "Invalid calibration target");
+        const WIDTH: usize = 2048;
+        const HEIGHT: usize = 1400;
         const DISTANCE: f64 = 1.6;
-        const WIDTH: f64 = 2.0;
-        let mut pixels = vec![0u8; SIZE * SIZE * 4];
+        const WIDTH_METERS: f64 = 2.0;
+        let mut pixels = vec![0u8; WIDTH * HEIGHT * 4];
         for rgba in pixels.as_chunks_mut::<4>().0 {
             rgba.copy_from_slice(&[15, 15, 24, 220]);
         }
-        let x = ((0.5 + target[0] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
-        let y = ((0.5 - target[1] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
-        draw_disc(&mut pixels, SIZE, x, y, 60, [200, 177, 255, 255]);
-        draw_disc(&mut pixels, SIZE, x, y, 49, [15, 15, 24, 220]);
-        draw_disc(&mut pixels, SIZE, x, y, 6, [250, 248, 255, 255]);
+        let pixels_per_meter = WIDTH as f64 / WIDTH_METERS;
+        for guide in positions {
+            let gx = (WIDTH as f64 / 2.0 + guide[0] * DISTANCE * pixels_per_meter).round() as i32;
+            let gy = (HEIGHT as f64 / 2.0 - guide[1] * DISTANCE * pixels_per_meter).round() as i32;
+            draw_disc(&mut pixels, WIDTH, HEIGHT, gx, gy, 9, [80, 78, 98, 220]);
+        }
+        let target = positions[step];
+        let x = (WIDTH as f64 / 2.0 + target[0] * DISTANCE * pixels_per_meter).round() as i32;
+        let y = (HEIGHT as f64 / 2.0 - target[1] * DISTANCE * pixels_per_meter).round() as i32;
+        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 60, [200, 177, 255, 255]);
+        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 49, [15, 15, 24, 220]);
+        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 6, [250, 248, 255, 255]);
         for marker in 0..total {
-            let mx = (SIZE as f64 * (0.24 + 0.52 * marker as f64 / (total - 1) as f64)) as i32;
+            let mx = (WIDTH as f64 * (0.24 + 0.52 * marker as f64 / (total - 1) as f64)) as i32;
             let color = if marker < step {
                 [115, 225, 170, 255]
             } else if marker == step {
@@ -50,7 +60,15 @@ impl EyeCalibrationOverlay<'_> {
             } else {
                 [88, 85, 105, 255]
             };
-            draw_disc(&mut pixels, SIZE, mx, SIZE as i32 - 140, 24, color);
+            draw_disc(
+                &mut pixels,
+                WIDTH,
+                HEIGHT,
+                mx,
+                HEIGHT as i32 - 140,
+                24,
+                color,
+            );
         }
         // SAFETY: the active OpenVR context owns this table, and SetOverlayRaw copies the RGBA buffer.
         unsafe {
@@ -58,8 +76,8 @@ impl EyeCalibrationOverlay<'_> {
             let error = overlay.SetOverlayRaw.context("Missing overlay image API")?(
                 self.handle,
                 pixels.as_mut_ptr().cast(),
-                SIZE as u32,
-                SIZE as u32,
+                WIDTH as u32,
+                HEIGHT as u32,
                 4,
             );
             ensure!(error == 0, "SteamVR rejected calibration target: {error}");
@@ -89,16 +107,17 @@ impl Drop for EyeCalibrationOverlay<'_> {
 
 fn draw_disc(
     pixels: &mut [u8],
-    size: usize,
+    width: usize,
+    height: usize,
     center_x: i32,
     center_y: i32,
     radius: i32,
     color: [u8; 4],
 ) {
-    for y in (center_y - radius).max(0)..=(center_y + radius).min(size as i32 - 1) {
-        for x in (center_x - radius).max(0)..=(center_x + radius).min(size as i32 - 1) {
+    for y in (center_y - radius).max(0)..=(center_y + radius).min(height as i32 - 1) {
+        for x in (center_x - radius).max(0)..=(center_x + radius).min(width as i32 - 1) {
             if (x - center_x).pow(2) + (y - center_y).pow(2) <= radius.pow(2) {
-                let index = (y as usize * size + x as usize) * 4;
+                let index = (y as usize * width + x as usize) * 4;
                 pixels[index..index + 4].copy_from_slice(&color);
             }
         }

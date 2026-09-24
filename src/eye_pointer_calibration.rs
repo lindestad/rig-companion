@@ -12,21 +12,40 @@ pub struct Target {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
     pub version: u8,
-    pub offset_x: [f64; 6],
-    pub offset_y: [f64; 6],
+    pub offset_x: [f64; 10],
+    pub offset_y: [f64; 10],
     /// Observed gaze bounds used to prevent polynomial extrapolation.
     pub bounds: [f64; 4],
+    /// Tangent-space target radii used to keep the fit well-conditioned.
+    pub scale: [f64; 2],
+}
+
+fn basis(gaze: [f64; 2], scale: [f64; 2]) -> [f64; 10] {
+    let x = gaze[0] / scale[0];
+    let y = gaze[1] / scale[1];
+    [
+        1.0,
+        x,
+        y,
+        x * x,
+        x * y,
+        y * y,
+        x * x * x,
+        x * x * y,
+        x * y * y,
+        y * y * y,
+    ]
 }
 
 impl Profile {
     pub fn corrected(&self, gaze: [f64; 2]) -> [f64; 2] {
         let x = gaze[0].clamp(self.bounds[0], self.bounds[1]);
         let y = gaze[1].clamp(self.bounds[2], self.bounds[3]);
-        let basis = [1.0, x, y, x * x, x * y, y * y];
-        let correction = |coefficients: &[f64; 6]| {
+        let terms = basis([x, y], self.scale);
+        let correction = |coefficients: &[f64; 10]| {
             coefficients
                 .iter()
-                .zip(basis)
+                .zip(terms)
                 .map(|(coefficient, term)| coefficient * term)
                 .sum::<f64>()
                 .clamp(-0.25, 0.25)
@@ -47,18 +66,30 @@ pub fn profile_path() -> Result<PathBuf> {
 
 pub fn fit(targets: &[Target]) -> Result<Profile> {
     ensure!(
-        targets.len() >= 9,
-        "Collect at least nine calibration targets"
+        targets.len() >= 17,
+        "Collect the center and two eight-point rings"
     );
-    let mut normal = [[0.0; 6]; 6];
-    let mut rhs_x = [0.0; 6];
-    let mut rhs_y = [0.0; 6];
+    let mut normal = [[0.0; 10]; 10];
+    let mut rhs_x = [0.0; 10];
+    let mut rhs_y = [0.0; 10];
     let mut bounds = [
         f64::INFINITY,
         f64::NEG_INFINITY,
         f64::INFINITY,
         f64::NEG_INFINITY,
     ];
+    let mut scale = [0.0f64; 2];
+    for target in targets {
+        scale[0] = scale[0].max(target.expected[0].abs());
+        scale[1] = scale[1].max(target.expected[1].abs());
+    }
+    ensure!(
+        scale[0].is_finite()
+            && scale[1].is_finite()
+            && (0.2..=0.8).contains(&scale[0])
+            && (0.15..=0.8).contains(&scale[1]),
+        "Calibration targets do not cover the expected view"
+    );
     for target in targets {
         let [x, y] = target.observed;
         let [wanted_x, wanted_y] = target.expected;
@@ -74,31 +105,34 @@ pub fn fit(targets: &[Target]) -> Result<Profile> {
         bounds[1] = bounds[1].max(x);
         bounds[2] = bounds[2].min(y);
         bounds[3] = bounds[3].max(y);
-        let basis = [1.0, x, y, x * x, x * y, y * y];
-        for i in 0..6 {
-            rhs_x[i] += basis[i] * (wanted_x - x);
-            rhs_y[i] += basis[i] * (wanted_y - y);
-            for j in 0..6 {
-                normal[i][j] += basis[i] * basis[j];
+        let terms = basis([x, y], scale);
+        for i in 0..10 {
+            rhs_x[i] += terms[i] * (wanted_x - x);
+            rhs_y[i] += terms[i] * (wanted_y - y);
+            for j in 0..10 {
+                normal[i][j] += terms[i] * terms[j];
             }
         }
     }
     ensure!(
-        bounds[1] - bounds[0] > 0.20 && bounds[3] - bounds[2] > 0.15,
+        bounds[1] - bounds[0] > 0.40 && bounds[3] - bounds[2] > 0.30,
         "Calibration targets did not span enough of the view"
     );
-    // Favor an offset/scale correction; curvature is available but strongly regularized.
-    for (i, penalty) in [0.0001, 0.002, 0.002, 0.03, 0.03, 0.03]
-        .into_iter()
-        .enumerate()
+    // Favor an offset/scale correction; higher-order terms add smooth local variation.
+    for (i, penalty) in [
+        0.0001, 0.001, 0.001, 0.02, 0.02, 0.02, 0.08, 0.08, 0.08, 0.08,
+    ]
+    .into_iter()
+    .enumerate()
     {
         normal[i][i] += penalty;
     }
     let profile = Profile {
-        version: 1,
+        version: 2,
         offset_x: solve(normal, rhs_x)?,
         offset_y: solve(normal, rhs_y)?,
         bounds,
+        scale,
     };
     let mut squared_error = 0.0;
     for target in targets {
@@ -123,9 +157,9 @@ pub fn fit(targets: &[Target]) -> Result<Profile> {
     Ok(profile)
 }
 
-fn solve(mut matrix: [[f64; 6]; 6], mut rhs: [f64; 6]) -> Result<[f64; 6]> {
-    for column in 0..6 {
-        let pivot = (column..6)
+fn solve<const N: usize>(mut matrix: [[f64; N]; N], mut rhs: [f64; N]) -> Result<[f64; N]> {
+    for column in 0..N {
+        let pivot = (column..N)
             .max_by(|&a, &b| matrix[a][column].abs().total_cmp(&matrix[b][column].abs()))
             .unwrap();
         ensure!(
@@ -160,18 +194,40 @@ mod tests {
 
     #[test]
     fn recovers_smooth_offset_and_scale_without_large_extrapolation() {
-        let mut targets = Vec::new();
-        for y in [-0.18, 0.0, 0.18] {
-            for x in [-0.25, 0.0, 0.25] {
-                targets.push(Target {
-                    observed: [x - 0.04 + 0.03 * x, y - 0.025],
-                    expected: [x, y],
-                });
+        let mut points = vec![[0.0, 0.0]];
+        for [rx, ry] in [[0.2, 0.15], [0.4, 0.3]] {
+            for [dx, dy] in [
+                [-1.0, 1.0],
+                [0.0, 1.0],
+                [1.0, 1.0],
+                [1.0, 0.0],
+                [1.0, -1.0],
+                [0.0, -1.0],
+                [-1.0, -1.0],
+                [-1.0, 0.0],
+            ] {
+                points.push([dx * rx, dy * ry]);
             }
         }
+        let observed = |[x, y]: [f64; 2]| {
+            [
+                x - 0.04 + 0.03 * x + 0.06 * x * x * x,
+                y - 0.025 + 0.04 * y * y * y,
+            ]
+        };
+        let targets = points
+            .into_iter()
+            .map(|expected| Target {
+                observed: observed(expected),
+                expected,
+            })
+            .collect::<Vec<_>>();
         let profile = fit(&targets).unwrap();
-        let actual = profile.corrected([-0.04, -0.025]);
+        assert_eq!(profile.version, 2);
+        let actual = profile.corrected(observed([0.0, 0.0]));
         assert!(actual[0].abs() < 0.005 && actual[1].abs() < 0.005);
+        let holdout = profile.corrected(observed([0.29, -0.12]));
+        assert!((holdout[0] - 0.29).abs() < 0.008 && (holdout[1] + 0.12).abs() < 0.008);
         let distant = profile.corrected([2.0, -2.0]);
         assert!((distant[0] - 2.0).abs() <= 0.25 && (distant[1] + 2.0).abs() <= 0.25);
     }

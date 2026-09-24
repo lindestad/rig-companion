@@ -9,22 +9,30 @@ use std::{
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_ESCAPE};
 
-const TARGETS: [[f64; 2]; 9] = [
+const TARGETS: [[f64; 2]; 17] = [
     [0.0, 0.0],
-    [-0.25, 0.18],
-    [0.25, 0.18],
-    [0.25, -0.18],
-    [-0.25, -0.18],
-    [0.0, 0.18],
-    [0.25, 0.0],
-    [0.0, -0.18],
-    [-0.25, 0.0],
+    [-0.20, 0.15],
+    [0.0, 0.15],
+    [0.20, 0.15],
+    [0.20, 0.0],
+    [0.20, -0.15],
+    [0.0, -0.15],
+    [-0.20, -0.15],
+    [-0.20, 0.0],
+    [-0.40, 0.30],
+    [0.0, 0.30],
+    [0.40, 0.30],
+    [0.40, 0.0],
+    [0.40, -0.30],
+    [0.0, -0.30],
+    [-0.40, -0.30],
+    [-0.40, 0.0],
 ];
 
 fn main() -> Result<()> {
     let preview = std::env::args().any(|argument| argument == "--preview");
     println!("Eye pointer calibration: wear the headset and look at each purple dot.");
-    println!("Nine targets take about 25 seconds. Press Escape to cancel.");
+    println!("Seventeen targets take about a minute. Press Escape to cancel.");
     let vr = SteamVr::connect_overlay()?;
     let overlay = vr.eye_calibration_overlay()?;
     if preview {

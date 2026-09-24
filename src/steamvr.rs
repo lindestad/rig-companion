@@ -31,7 +31,7 @@ impl EyeCalibrationOverlay<'_> {
     pub fn show_target(&self, target: [f64; 2], step: usize, total: usize) -> Result<()> {
         const SIZE: usize = 512;
         const DISTANCE: f64 = 1.6;
-        const WIDTH: f64 = 1.2;
+        const WIDTH: f64 = 1.6;
         let mut pixels = vec![0u8; SIZE * SIZE * 4];
         for rgba in pixels.as_chunks_mut::<4>().0 {
             rgba.copy_from_slice(&[15, 15, 24, 220]);
@@ -139,7 +139,7 @@ impl SteamVr {
             };
             let error = overlay
                 .SetOverlayWidthInMeters
-                .context("Missing overlay width API")?(handle, 1.2);
+                .context("Missing overlay width API")?(handle, 1.6);
             ensure!(
                 error == 0,
                 "SteamVR rejected calibration view size: {error}"

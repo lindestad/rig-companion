@@ -31,15 +31,16 @@ impl EyeCalibrationOverlay<'_> {
     pub fn show_target(&self, target: [f64; 2], step: usize, total: usize) -> Result<()> {
         const SIZE: usize = 2048;
         const DISTANCE: f64 = 1.6;
-        const WIDTH: f64 = 1.6;
+        const WIDTH: f64 = 2.0;
         let mut pixels = vec![0u8; SIZE * SIZE * 4];
         for rgba in pixels.as_chunks_mut::<4>().0 {
             rgba.copy_from_slice(&[15, 15, 24, 220]);
         }
         let x = ((0.5 + target[0] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
         let y = ((0.5 - target[1] * DISTANCE / WIDTH) * SIZE as f64).round() as i32;
-        draw_disc(&mut pixels, SIZE, x, y, 80, [200, 177, 255, 255]);
-        draw_disc(&mut pixels, SIZE, x, y, 32, [250, 248, 255, 255]);
+        draw_disc(&mut pixels, SIZE, x, y, 60, [200, 177, 255, 255]);
+        draw_disc(&mut pixels, SIZE, x, y, 49, [15, 15, 24, 220]);
+        draw_disc(&mut pixels, SIZE, x, y, 6, [250, 248, 255, 255]);
         for marker in 0..total {
             let mx = (SIZE as f64 * (0.24 + 0.52 * marker as f64 / (total - 1) as f64)) as i32;
             let color = if marker < step {
@@ -139,7 +140,7 @@ impl SteamVr {
             };
             let error = overlay
                 .SetOverlayWidthInMeters
-                .context("Missing overlay width API")?(handle, 1.6);
+                .context("Missing overlay width API")?(handle, 2.0);
             ensure!(
                 error == 0,
                 "SteamVR rejected calibration view size: {error}"
@@ -488,6 +489,20 @@ impl SteamVr {
                 .context("Missing dashboard visibility API")?(
             ))
         }
+    }
+
+    pub fn close_dashboard_if_visible(&self) -> Result<bool> {
+        if !self.dashboard_visible()? {
+            return Ok(false);
+        }
+        crate::startup::toggle_dashboard_closed()?;
+        for _ in 0..20 {
+            thread::sleep(Duration::from_millis(50));
+            if !self.dashboard_visible()? {
+                return Ok(true);
+            }
+        }
+        bail!("SteamVR dashboard remained open; calibration was not started")
     }
 
     pub fn headset_bridge_request(&self, request: &CStr) -> Result<String> {

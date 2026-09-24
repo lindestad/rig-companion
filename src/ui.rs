@@ -352,7 +352,7 @@ impl App {
                 }
                 self.pointer_calibration_running = true;
                 self.pointer_calibration_status =
-                    "Look at each dot in the headset. Press Escape to cancel.".into();
+                    "Closing the dashboard. First target appears in five seconds; look at each small center dot. Press Escape to cancel.".into();
                 return Task::perform(
                     async {
                         match tokio::task::spawn_blocking(|| {

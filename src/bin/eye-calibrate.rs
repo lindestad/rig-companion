@@ -11,22 +11,22 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_ESCAP
 
 const TARGETS: [[f64; 2]; 17] = [
     [0.0, 0.0],
-    [-0.20, 0.15],
+    [-0.25, 0.15],
     [0.0, 0.15],
-    [0.20, 0.15],
-    [0.20, 0.0],
-    [0.20, -0.15],
+    [0.25, 0.15],
+    [0.25, 0.0],
+    [0.25, -0.15],
     [0.0, -0.15],
-    [-0.20, -0.15],
-    [-0.20, 0.0],
-    [-0.40, 0.30],
+    [-0.25, -0.15],
+    [-0.25, 0.0],
+    [-0.50, 0.30],
     [0.0, 0.30],
-    [0.40, 0.30],
-    [0.40, 0.0],
-    [0.40, -0.30],
+    [0.50, 0.30],
+    [0.50, 0.0],
+    [0.50, -0.30],
     [0.0, -0.30],
-    [-0.40, -0.30],
-    [-0.40, 0.0],
+    [-0.50, -0.30],
+    [-0.50, 0.0],
 ];
 
 fn main() -> Result<()> {
@@ -34,8 +34,8 @@ fn main() -> Result<()> {
     println!("Eye pointer calibration: wear the headset and look at each purple dot.");
     println!("Seventeen targets take about a minute. Press Escape to cancel.");
     let vr = SteamVr::connect_overlay()?;
-    let overlay = vr.eye_calibration_overlay()?;
     if preview {
+        let overlay = vr.eye_calibration_overlay()?;
         overlay.show_target([0.0, 0.0], 0, TARGETS.len())?;
         thread::sleep(Duration::from_secs(6));
         return Ok(());
@@ -44,11 +44,17 @@ fn main() -> Result<()> {
         vr.headset_gaze_sample()?.is_some(),
         "No fresh gaze. Restore eye tracking before calibrating."
     );
+    if vr.close_dashboard_if_visible()? {
+        println!("SteamVR dashboard closed for alignment.");
+    }
+    println!("First target appears in five seconds.");
+    wait_or_cancel(Duration::from_secs(5))?;
+    let overlay = vr.eye_calibration_overlay()?;
     let mut targets = Vec::new();
     for (index, expected) in TARGETS.into_iter().enumerate() {
         overlay.show_target(expected, index, TARGETS.len())?;
         println!("Target {} of {}", index + 1, TARGETS.len());
-        let observed = collect(&vr)?;
+        let observed = collect(&vr, if index == 0 { 2000 } else { 650 })?;
         targets.push(Target { observed, expected });
     }
     drop(overlay);
@@ -72,9 +78,21 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn collect(vr: &SteamVr) -> Result<[f64; 2]> {
+fn wait_or_cancel(duration: Duration) -> Result<()> {
+    let started = Instant::now();
+    while started.elapsed() < duration {
+        // SAFETY: read-only keyboard state; no keyboard hooks are installed.
+        if unsafe { GetAsyncKeyState(VK_ESCAPE.into()) < 0 } {
+            anyhow::bail!("Calibration cancelled. Previous profile was kept.");
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    Ok(())
+}
+
+fn collect(vr: &SteamVr, settle_ms: u64) -> Result<[f64; 2]> {
     // Let the eye settle on the newly drawn target before sampling.
-    thread::sleep(Duration::from_millis(650));
+    wait_or_cancel(Duration::from_millis(settle_ms))?;
     let started = Instant::now();
     let mut last_sequence = None;
     let mut samples = Vec::new();

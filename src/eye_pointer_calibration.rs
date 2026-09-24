@@ -135,16 +135,24 @@ pub fn fit(targets: &[Target]) -> Result<Profile> {
         scale,
     };
     let mut squared_error = 0.0;
+    let mut largest_error = 0.0f64;
     for target in targets {
         let corrected = profile.corrected(target.observed);
-        squared_error += (corrected[0] - target.expected[0]).powi(2)
-            + (corrected[1] - target.expected[1]).powi(2);
+        let error = ((corrected[0] - target.expected[0]).powi(2)
+            + (corrected[1] - target.expected[1]).powi(2))
+        .sqrt();
+        squared_error += error * error;
+        largest_error = largest_error.max(error);
     }
     let rms = (squared_error / targets.len() as f64).sqrt();
     ensure!(
         rms < 0.055,
         "Calibration fit is inconsistent (about {:.1}° error); try again",
         rms.to_degrees()
+    );
+    ensure!(
+        largest_error < 0.075,
+        "One target disagreed with the others; keep looking at the small center dot and try again"
     );
     ensure!(
         profile
@@ -154,7 +162,45 @@ pub fn fit(targets: &[Target]) -> Result<Profile> {
             .all(|v| v.is_finite() && v.abs() <= 2.0),
         "Calibration fit is unstable"
     );
+    validate_shape(&profile)?;
     Ok(profile)
+}
+
+fn validate_shape(profile: &Profile) -> Result<()> {
+    const STEP: f64 = 0.0001;
+    for ix in 0..9 {
+        for iy in 0..9 {
+            let x = profile.bounds[0]
+                + (profile.bounds[1] - profile.bounds[0]) * (ix as f64 + 0.5) / 9.0;
+            let y = profile.bounds[2]
+                + (profile.bounds[3] - profile.bounds[2]) * (iy as f64 + 0.5) / 9.0;
+            let corrected = profile.corrected([x, y]);
+            ensure!(
+                (corrected[0] - x).abs() < 0.18 && (corrected[1] - y).abs() < 0.18,
+                "Alignment offset is too large in one area; try the targets again"
+            );
+            let right = profile.corrected([x + STEP, y]);
+            let left = profile.corrected([x - STEP, y]);
+            let up = profile.corrected([x, y + STEP]);
+            let down = profile.corrected([x, y - STEP]);
+            let correction_gradient = [
+                (right[0] - left[0]) / (2.0 * STEP) - 1.0,
+                (up[0] - down[0]) / (2.0 * STEP),
+                (right[1] - left[1]) / (2.0 * STEP),
+                (up[1] - down[1]) / (2.0 * STEP) - 1.0,
+            ];
+            let strength = correction_gradient
+                .iter()
+                .map(|value| value * value)
+                .sum::<f64>()
+                .sqrt();
+            ensure!(
+                strength < 0.8,
+                "Alignment bends too sharply in one area; try the targets again"
+            );
+        }
+    }
+    Ok(())
 }
 
 fn solve<const N: usize>(mut matrix: [[f64; N]; N], mut rhs: [f64; N]) -> Result<[f64; N]> {
@@ -241,5 +287,38 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert!(fit(&targets).is_err());
+    }
+
+    #[test]
+    fn rejects_center_captured_before_the_user_looked_at_it() {
+        let mut targets = vec![Target {
+            observed: [0.12, -0.10],
+            expected: [0.0, 0.0],
+        }];
+        for [rx, ry] in [[0.25, 0.15], [0.5, 0.3]] {
+            for [dx, dy] in [
+                [-1.0, 1.0],
+                [0.0, 1.0],
+                [1.0, 1.0],
+                [1.0, 0.0],
+                [1.0, -1.0],
+                [0.0, -1.0],
+                [-1.0, -1.0],
+                [-1.0, 0.0],
+            ] {
+                let expected = [dx * rx, dy * ry];
+                targets.push(Target {
+                    observed: [expected[0] - 0.02, expected[1] - 0.03],
+                    expected,
+                });
+            }
+        }
+        let error = fit(&targets).unwrap_err().to_string();
+        assert!(
+            error.contains("One target")
+                || error.contains("bends too sharply")
+                || error.contains("offset is too large"),
+            "{error}"
+        );
     }
 }

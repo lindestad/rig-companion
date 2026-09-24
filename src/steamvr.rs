@@ -31,8 +31,9 @@ impl EyeCalibrationOverlay<'_> {
     pub fn show_target(&self, positions: &[[f64; 2]], step: usize, focused: bool) -> Result<()> {
         let total = positions.len();
         ensure!(total >= 2 && step < total, "Invalid calibration target");
-        const WIDTH: usize = 2048;
-        const HEIGHT: usize = 1400;
+        const PIXEL_SCALE: i32 = 2;
+        const WIDTH: usize = 2048 * PIXEL_SCALE as usize;
+        const HEIGHT: usize = 1400 * PIXEL_SCALE as usize;
         const DISTANCE: f64 = 1.6;
         const WIDTH_METERS: f64 = 2.0;
         let mut pixels = vec![0u8; WIDTH * HEIGHT * 4];
@@ -43,26 +44,42 @@ impl EyeCalibrationOverlay<'_> {
         for guide in positions {
             let gx = (WIDTH as f64 / 2.0 + guide[0] * DISTANCE * pixels_per_meter).round() as i32;
             let gy = (HEIGHT as f64 / 2.0 - guide[1] * DISTANCE * pixels_per_meter).round() as i32;
-            draw_disc(&mut pixels, WIDTH, HEIGHT, gx, gy, 9, [80, 78, 98, 220]);
+            draw_disc(
+                &mut pixels,
+                WIDTH,
+                HEIGHT,
+                gx,
+                gy,
+                9 * PIXEL_SCALE,
+                [80, 78, 98, 220],
+            );
         }
         let target = positions[step];
         let x = (WIDTH as f64 / 2.0 + target[0] * DISTANCE * pixels_per_meter).round() as i32;
         let y = (HEIGHT as f64 / 2.0 - target[1] * DISTANCE * pixels_per_meter).round() as i32;
-        let radius = if focused { 72 } else { 60 };
+        let radius = if focused { 46 } else { 38 } * PIXEL_SCALE;
         let color = if focused {
             [245, 225, 255, 255]
         } else {
             [200, 177, 255, 255]
         };
         draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, radius, color);
-        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 49, [15, 15, 24, 220]);
         draw_disc(
             &mut pixels,
             WIDTH,
             HEIGHT,
             x,
             y,
-            if focused { 9 } else { 6 },
+            31 * PIXEL_SCALE,
+            [15, 15, 24, 220],
+        );
+        draw_disc(
+            &mut pixels,
+            WIDTH,
+            HEIGHT,
+            x,
+            y,
+            if focused { 9 } else { 6 } * PIXEL_SCALE,
             [250, 248, 255, 255],
         );
         for marker in 0..total {
@@ -79,8 +96,8 @@ impl EyeCalibrationOverlay<'_> {
                 WIDTH,
                 HEIGHT,
                 mx,
-                HEIGHT as i32 - 140,
-                24,
+                HEIGHT as i32 - 140 * PIXEL_SCALE,
+                24 * PIXEL_SCALE,
                 color,
             );
         }
@@ -128,11 +145,16 @@ fn draw_disc(
     radius: i32,
     color: [u8; 4],
 ) {
-    for y in (center_y - radius).max(0)..=(center_y + radius).min(height as i32 - 1) {
-        for x in (center_x - radius).max(0)..=(center_x + radius).min(width as i32 - 1) {
-            if (x - center_x).pow(2) + (y - center_y).pow(2) <= radius.pow(2) {
+    for y in (center_y - radius - 1).max(0)..=(center_y + radius + 1).min(height as i32 - 1) {
+        for x in (center_x - radius - 1).max(0)..=(center_x + radius + 1).min(width as i32 - 1) {
+            let dx = (x - center_x) as f64;
+            let dy = (y - center_y) as f64;
+            let coverage = (radius as f64 + 0.5 - dx.hypot(dy)).clamp(0.0, 1.0);
+            if coverage > 0.0 {
                 let index = (y as usize * width + x as usize) * 4;
-                pixels[index..index + 4].copy_from_slice(&color);
+                for (old, new) in pixels[index..index + 4].iter_mut().zip(color) {
+                    *old = (*old as f64 * (1.0 - coverage) + new as f64 * coverage).round() as u8;
+                }
             }
         }
     }

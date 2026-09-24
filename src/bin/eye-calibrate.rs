@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, ensure};
 use rig_companion::{
     eye_pointer_calibration::{self, Target},
-    steamvr::SteamVr,
+    steamvr::{EyeCalibrationOverlay, SteamVr},
 };
 use std::{
     fs, thread,
@@ -28,7 +28,7 @@ fn main() -> Result<()> {
     let target_positions = targets();
     if preview {
         let overlay = vr.eye_calibration_overlay()?;
-        overlay.show_target(&target_positions, 0)?;
+        overlay.show_target(&target_positions, 0, false)?;
         thread::sleep(Duration::from_secs(6));
         return Ok(());
     }
@@ -44,9 +44,15 @@ fn main() -> Result<()> {
     let overlay = vr.eye_calibration_overlay()?;
     let mut targets = Vec::new();
     for (index, expected) in target_positions.iter().copied().enumerate() {
-        overlay.show_target(&target_positions, index)?;
+        overlay.show_target(&target_positions, index, false)?;
         println!("Target {} of {}", index + 1, target_positions.len());
-        let observed = collect(&vr, if index == 0 { 2000 } else { 650 })?;
+        let observed = collect(
+            &vr,
+            &overlay,
+            &target_positions,
+            index,
+            if index == 0 { 2000 } else { 650 },
+        )?;
         targets.push(Target { observed, expected });
     }
     drop(overlay);
@@ -82,13 +88,23 @@ fn wait_or_cancel(duration: Duration) -> Result<()> {
     Ok(())
 }
 
-fn collect(vr: &SteamVr, settle_ms: u64) -> Result<[f64; 2]> {
-    // Let the eye settle on the newly drawn target before sampling.
-    wait_or_cancel(Duration::from_millis(settle_ms))?;
+fn collect(
+    vr: &SteamVr,
+    overlay: &EyeCalibrationOverlay<'_>,
+    positions: &[[f64; 2]],
+    index: usize,
+    settle_ms: u64,
+) -> Result<[f64; 2]> {
     let started = Instant::now();
+    let expected = positions[index];
+    let settle = Duration::from_millis(settle_ms);
     let mut last_sequence = None;
     let mut samples = Vec::new();
-    while started.elapsed() < Duration::from_secs(8) {
+    let mut sample_started = None;
+    let mut near_count = 0;
+    let mut away_count = 0;
+    let mut focused = false;
+    while started.elapsed() < settle + Duration::from_secs(8) {
         // SAFETY: read-only keyboard state; no keyboard hooks are installed.
         if unsafe { GetAsyncKeyState(VK_ESCAPE.into()) < 0 } {
             anyhow::bail!("Calibration cancelled. Previous profile was kept.");
@@ -97,9 +113,34 @@ fn collect(vr: &SteamVr, settle_ms: u64) -> Result<[f64; 2]> {
             && last_sequence != Some(sequence)
         {
             last_sequence = Some(sequence);
-            samples.push([x, y]);
+            let dx = (x - expected[0]) / 0.16;
+            let dy = (y - expected[1]) / 0.13;
+            let near = dx * dx + dy * dy < 1.0;
+            if near {
+                near_count += 1;
+                away_count = 0;
+            } else {
+                away_count += 1;
+                near_count = 0;
+            }
+            if !focused && near_count >= 5 {
+                focused = true;
+                overlay.show_target(positions, index, true)?;
+            } else if focused && away_count >= 8 {
+                focused = false;
+                samples.clear();
+                sample_started = None;
+                overlay.show_target(positions, index, false)?;
+            }
+            if focused && near && started.elapsed() >= settle {
+                sample_started.get_or_insert_with(Instant::now);
+                samples.push([x, y]);
+            }
         }
-        if samples.len() >= 35 && started.elapsed() >= Duration::from_millis(1400) {
+        if samples.len() >= 35
+            && sample_started
+                .is_some_and(|start: Instant| start.elapsed() >= Duration::from_millis(1400))
+        {
             if let Ok(center) = stable_median(&samples) {
                 return Ok(center);
             }
@@ -107,7 +148,7 @@ fn collect(vr: &SteamVr, settle_ms: u64) -> Result<[f64; 2]> {
         }
         thread::sleep(Duration::from_millis(25));
     }
-    anyhow::bail!("Gaze was missing or unstable at a target. Previous profile was kept.")
+    anyhow::bail!("Gaze did not settle on a target. Previous profile was kept.")
 }
 
 fn stable_median(samples: &[[f64; 2]]) -> Result<[f64; 2]> {

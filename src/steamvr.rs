@@ -28,7 +28,7 @@ pub struct EyeCalibrationOverlay<'a> {
 }
 
 impl EyeCalibrationOverlay<'_> {
-    pub fn show_target(&self, positions: &[[f64; 2]], step: usize) -> Result<()> {
+    pub fn show_target(&self, positions: &[[f64; 2]], step: usize, focused: bool) -> Result<()> {
         let total = positions.len();
         ensure!(total >= 2 && step < total, "Invalid calibration target");
         const WIDTH: usize = 2048;
@@ -48,9 +48,23 @@ impl EyeCalibrationOverlay<'_> {
         let target = positions[step];
         let x = (WIDTH as f64 / 2.0 + target[0] * DISTANCE * pixels_per_meter).round() as i32;
         let y = (HEIGHT as f64 / 2.0 - target[1] * DISTANCE * pixels_per_meter).round() as i32;
-        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 60, [200, 177, 255, 255]);
+        let radius = if focused { 72 } else { 60 };
+        let color = if focused {
+            [245, 225, 255, 255]
+        } else {
+            [200, 177, 255, 255]
+        };
+        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, radius, color);
         draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 49, [15, 15, 24, 220]);
-        draw_disc(&mut pixels, WIDTH, HEIGHT, x, y, 6, [250, 248, 255, 255]);
+        draw_disc(
+            &mut pixels,
+            WIDTH,
+            HEIGHT,
+            x,
+            y,
+            if focused { 9 } else { 6 },
+            [250, 248, 255, 255],
+        );
         for marker in 0..total {
             let mx = (WIDTH as f64 * (0.24 + 0.52 * marker as f64 / (total - 1) as f64)) as i32;
             let color = if marker < step {

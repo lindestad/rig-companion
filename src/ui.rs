@@ -32,6 +32,8 @@ pub struct App {
     hotkeys: Option<Hotkeys>,
     gaze_held: bool,
     gaze_refreshed: Instant,
+    joystick_direction: i8,
+    joystick_refreshed: Instant,
     local_message: Option<String>,
     eye_page: bool,
     settings_page: bool,
@@ -123,6 +125,8 @@ impl App {
             hotkeys,
             gaze_held: false,
             gaze_refreshed: Instant::now(),
+            joystick_direction: 0,
+            joystick_refreshed: Instant::now(),
             local_message,
             eye_page: false,
             settings_page: false,
@@ -273,6 +277,7 @@ impl App {
                     self.quit_error = None;
                     self.pending = None;
                     self.release_gaze();
+                    self.release_joystick();
                     self.hotkeys = None;
                     self.worker.begin_shutdown();
                     self.wind.suspend();
@@ -428,6 +433,15 @@ impl App {
                             }
                         }
                         HotkeyEvent::GazeUp => self.release_gaze(),
+                        HotkeyEvent::Joystick(direction) => {
+                            if direction == 0 || !self.state.connected || self.quitting {
+                                self.release_joystick();
+                            } else {
+                                self.joystick_direction = direction;
+                                self.joystick_refreshed = Instant::now();
+                                self.worker.send(Command::Joystick(direction));
+                            }
+                        }
                         HotkeyEvent::Shortcut(1) => self.schedule(Command::RestoreHeight),
                         HotkeyEvent::Shortcut(2) => {
                             self.pending = None;
@@ -443,6 +457,12 @@ impl App {
                 if self.gaze_held && self.gaze_refreshed.elapsed() >= Duration::from_millis(250) {
                     self.gaze_refreshed = Instant::now();
                     self.worker.send(Command::GazeRefresh);
+                }
+                if self.joystick_direction != 0
+                    && self.joystick_refreshed.elapsed() >= Duration::from_millis(250)
+                {
+                    self.joystick_refreshed = Instant::now();
+                    self.worker.send(Command::Joystick(self.joystick_direction));
                 }
             }
             Message::Height(value) => self.height = value,
@@ -490,6 +510,7 @@ impl App {
                     }
                 } else {
                     self.release_gaze();
+                    self.release_joystick();
                     self.hotkeys = None;
                 }
             }
@@ -510,6 +531,13 @@ impl App {
         if self.gaze_held {
             self.gaze_held = false;
             self.worker.send(Command::GazeUp);
+        }
+    }
+
+    fn release_joystick(&mut self) {
+        if self.joystick_direction != 0 {
+            self.joystick_direction = 0;
+            self.worker.send(Command::Joystick(0));
         }
     }
 
@@ -837,7 +865,7 @@ impl App {
                 .label("Global shortcuts")
                 .on_toggle(Message::Shortcuts)
                 .size(17),
-            text("F13 recenter / F14 click or drag / F15 desktop / F16 camera | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
+            text("F13 recenter / F14 click or drag / F15 desktop / F16 camera / F17-F18 joystick test | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
                 .size(12)
                 .color(MUTED),
             Space::new().width(Fill),

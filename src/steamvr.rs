@@ -414,6 +414,32 @@ impl SteamVr {
         self.headset_gaze_hold_request(c"rigcompanion:gaze-up:v2", "ok:up")
     }
 
+    pub fn headset_joystick(&self, direction: i8) -> Result<()> {
+        ensure!((-1..=1).contains(&direction), "Invalid joystick direction");
+        if direction != 0 {
+            ensure!(
+                self.dashboard_visible()?,
+                "Open the SteamVR dashboard before using F17 or F18"
+            );
+        }
+        let capability = self.headset_bridge_request(c"rigcompanion:capabilities:joystick:v1")?;
+        ensure!(
+            capability == "ok:rigcompanion:joystick:v1",
+            "Headset driver does not support the joystick bridge (reply: {capability:?})"
+        );
+        let (request, expected) = match direction {
+            1 => (c"rigcompanion:joystick-up:v1", "ok:up"),
+            -1 => (c"rigcompanion:joystick-down:v1", "ok:down"),
+            _ => (c"rigcompanion:joystick-neutral:v1", "ok:neutral"),
+        };
+        let response = self.headset_bridge_request(request)?;
+        ensure!(
+            response == expected,
+            "Headset joystick rejected: {response}"
+        );
+        Ok(())
+    }
+
     pub fn gamepad_enabled(&self) -> Result<bool> {
         // SAFETY: exact SDK settings table and writable error output.
         unsafe {

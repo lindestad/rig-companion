@@ -28,6 +28,7 @@ pub enum Command {
     GazeDown,
     GazeRefresh,
     GazeUp,
+    Joystick(i8),
     Nudge(f64),
     Undo,
     Dashboard,
@@ -415,6 +416,21 @@ impl Engine {
                     _ => unreachable!(),
                 }
             }
+            Command::Joystick(direction) => {
+                if self.state.demo {
+                    return Ok(format!("Demo: headset joystick direction {direction}."));
+                }
+                if direction == 0 && self.backend.is_none() {
+                    return Ok("Headset joystick released.".into());
+                }
+                let Backend::Live(vr) =
+                    self.backend.as_ref().context("Connect to SteamVR first")?
+                else {
+                    unreachable!()
+                };
+                vr.headset_joystick(direction)?;
+                Ok(format!("Headset joystick direction {direction}."))
+            }
         }
     }
 }
@@ -473,7 +489,7 @@ impl Worker {
                             if matches!(command, Command::Connect) {
                                 auto_connect = true;
                             }
-                            if matches!(command, Command::GazeRefresh) {
+                            if matches!(command, Command::GazeRefresh | Command::Joystick(_)) {
                                 if let Err(error) = engine.execute(command) {
                                     engine.result(Err(error));
                                 }

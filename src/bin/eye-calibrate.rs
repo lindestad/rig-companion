@@ -29,16 +29,26 @@ fn targets() -> Vec<[f64; 2]> {
 
 fn main() -> Result<()> {
     let preview = std::env::args().any(|argument| argument == "--preview");
+    let preview_transitions = std::env::args().any(|argument| argument == "--preview-transitions");
     println!("Eye pointer calibration: wear the headset and look at each purple dot.");
     println!(
         "Seventeen alignment targets, then seven checks, take about a minute. Press Escape to cancel."
     );
     let vr = SteamVr::connect_overlay()?;
     let target_positions = targets();
-    if preview {
+    if preview || preview_transitions {
         let overlay = vr.eye_calibration_overlay()?;
-        overlay.show_target(&target_positions, 0, false)?;
-        thread::sleep(Duration::from_secs(6));
+        if preview_transitions {
+            for step in 0..6 {
+                overlay.show_target(&target_positions, step, false)?;
+                thread::sleep(Duration::from_millis(850));
+                overlay.show_target(&target_positions, step, true)?;
+                thread::sleep(Duration::from_millis(850));
+            }
+        } else {
+            overlay.show_target(&target_positions, 0, false)?;
+            thread::sleep(Duration::from_secs(6));
+        }
         return Ok(());
     }
     let path = eye_pointer_calibration::profile_path()?;

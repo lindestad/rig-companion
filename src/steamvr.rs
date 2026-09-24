@@ -24,7 +24,9 @@ pub struct SteamVr {
 pub struct EyeCalibrationOverlay<'a> {
     _owner: &'a SteamVr,
     table: *const vr::VR_IVROverlay_FnTable,
-    handle: vr::VROverlayHandle_t,
+    background: vr::VROverlayHandle_t,
+    foregrounds: [vr::VROverlayHandle_t; 2],
+    visible_foreground: Cell<Option<usize>>,
 }
 
 impl EyeCalibrationOverlay<'_> {
@@ -104,21 +106,82 @@ impl EyeCalibrationOverlay<'_> {
         // SAFETY: the active OpenVR context owns this table, and SetOverlayRaw copies the RGBA buffer.
         unsafe {
             let overlay = &*self.table;
+            let next = self
+                .visible_foreground
+                .get()
+                .map_or(0, |current| 1 - current);
+            let handle = self.foregrounds[next];
+            self.drain_image_events(handle)?;
             let error = overlay.SetOverlayRaw.context("Missing overlay image API")?(
-                self.handle,
+                handle,
                 pixels.as_mut_ptr().cast(),
                 WIDTH as u32,
                 HEIGHT as u32,
                 4,
             );
             ensure!(error == 0, "SteamVR rejected calibration target: {error}");
-            let error = overlay.ShowOverlay.context("Missing overlay show API")?(self.handle);
+            self.wait_for_image(handle)?;
+            let error = overlay.ShowOverlay.context("Missing overlay show API")?(handle);
             ensure!(
                 error == 0,
                 "SteamVR did not show calibration target: {error}"
             );
+            if let Some(current) = self.visible_foreground.get() {
+                thread::sleep(Duration::from_millis(20));
+                let error = overlay.HideOverlay.context("Missing overlay hide API")?(
+                    self.foregrounds[current],
+                );
+                ensure!(error == 0, "SteamVR could not hide old target: {error}");
+            }
+            self.visible_foreground.set(Some(next));
         }
         Ok(())
+    }
+
+    unsafe fn drain_image_events(&self, handle: vr::VROverlayHandle_t) -> Result<()> {
+        // SAFETY: the OpenVR context owns the handle; the event buffer has the expected ABI size.
+        unsafe {
+            let poll = (*self.table)
+                .PollNextOverlayEvent
+                .context("Missing overlay event API")?;
+            let mut event = std::mem::MaybeUninit::<vr::VREvent_t>::uninit();
+            while poll(
+                handle,
+                event.as_mut_ptr(),
+                std::mem::size_of::<vr::VREvent_t>() as u32,
+            ) {}
+        }
+        Ok(())
+    }
+
+    unsafe fn wait_for_image(&self, handle: vr::VROverlayHandle_t) -> Result<()> {
+        // SAFETY: the OpenVR context owns the handle; the event buffer has the expected ABI size.
+        unsafe {
+            let poll = (*self.table)
+                .PollNextOverlayEvent
+                .context("Missing overlay event API")?;
+            let started = Instant::now();
+            while started.elapsed() < Duration::from_secs(2) {
+                let mut event = std::mem::MaybeUninit::<vr::VREvent_t>::uninit();
+                while poll(
+                    handle,
+                    event.as_mut_ptr(),
+                    std::mem::size_of::<vr::VREvent_t>() as u32,
+                ) {
+                    match event.assume_init().eventType {
+                        kind if kind == vr::EVREventType_VREvent_ImageLoaded as u32 => {
+                            return Ok(());
+                        }
+                        kind if kind == vr::EVREventType_VREvent_ImageFailed as u32 => {
+                            bail!("SteamVR could not load a calibration target")
+                        }
+                        _ => {}
+                    }
+                }
+                thread::sleep(Duration::from_millis(2));
+            }
+            bail!("SteamVR did not finish loading a calibration target")
+        }
     }
 }
 
@@ -127,10 +190,16 @@ impl Drop for EyeCalibrationOverlay<'_> {
         // SAFETY: overlay and context remain owned by this process until this value is dropped.
         unsafe {
             if let Some(hide) = (*self.table).HideOverlay {
-                hide(self.handle);
+                for handle in self.foregrounds {
+                    hide(handle);
+                }
+                hide(self.background);
             }
             if let Some(destroy) = (*self.table).DestroyOverlay {
-                destroy(self.handle);
+                for handle in self.foregrounds {
+                    destroy(handle);
+                }
+                destroy(self.background);
             }
         }
     }
@@ -176,45 +245,103 @@ impl SteamVr {
         unsafe {
             let table = table::<vr::VR_IVROverlay_FnTable>(c"FnTable:IVROverlay_028")?;
             let overlay = &*table;
-            let mut handle = 0;
-            let error = overlay
-                .CreateOverlay
-                .context("Missing overlay create API")?(
-                c"rigcompanion.eye-pointer-calibration".as_ptr().cast_mut(),
-                c"Eye pointer calibration".as_ptr().cast_mut(),
-                &mut handle,
-            );
-            ensure!(
-                error == 0,
-                "SteamVR could not create calibration view: {error}"
-            );
+            let mut handles = Vec::with_capacity(3);
+            for (key, name) in [
+                (
+                    c"rigcompanion.eye-pointer-calibration.background",
+                    c"Eye pointer calibration background",
+                ),
+                (
+                    c"rigcompanion.eye-pointer-calibration",
+                    c"Eye pointer calibration",
+                ),
+                (
+                    c"rigcompanion.eye-pointer-calibration.next",
+                    c"Eye pointer calibration next target",
+                ),
+            ] {
+                let mut handle = 0;
+                let error = overlay
+                    .CreateOverlay
+                    .context("Missing overlay create API")?(
+                    key.as_ptr().cast_mut(),
+                    name.as_ptr().cast_mut(),
+                    &mut handle,
+                );
+                if error != 0 {
+                    if let Some(destroy) = overlay.DestroyOverlay {
+                        for existing in handles {
+                            destroy(existing);
+                        }
+                    }
+                    bail!("SteamVR could not create calibration view: {error}");
+                }
+                handles.push(handle);
+            }
             let view = EyeCalibrationOverlay {
                 _owner: self,
                 table,
-                handle,
+                background: handles[0],
+                foregrounds: [handles[1], handles[2]],
+                visible_foreground: Cell::new(None),
             };
-            let error = overlay
-                .SetOverlayWidthInMeters
-                .context("Missing overlay width API")?(handle, 2.0);
+            for handle in handles {
+                let error = overlay
+                    .SetOverlayWidthInMeters
+                    .context("Missing overlay width API")?(handle, 2.0);
+                ensure!(
+                    error == 0,
+                    "SteamVR rejected calibration view size: {error}"
+                );
+                let mut pose = vr::HmdMatrix34_t {
+                    m: [
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, -1.6],
+                    ],
+                };
+                let error = overlay
+                    .SetOverlayTransformTrackedDeviceRelative
+                    .context("Missing headset overlay transform API")?(
+                    handle, 0, &mut pose
+                );
+                ensure!(
+                    error == 0,
+                    "SteamVR rejected calibration view position: {error}"
+                );
+            }
+            for (order, handle) in view.foregrounds.iter().enumerate() {
+                let error = overlay
+                    .SetOverlaySortOrder
+                    .context("Missing overlay sort API")?(
+                    *handle, order as u32 + 1
+                );
+                ensure!(
+                    error == 0,
+                    "SteamVR rejected calibration layer order: {error}"
+                );
+            }
+            // An opaque, low-resolution layer stays visible while SteamVR uploads a new target.
+            // Its exact aspect ratio matches the 4096 x 2800 foreground texture.
+            let mut backdrop = vec![0u8; 256 * 175 * 4];
+            for rgba in backdrop.as_chunks_mut::<4>().0 {
+                rgba.copy_from_slice(&[15, 15, 24, 255]);
+            }
+            let error = overlay.SetOverlayRaw.context("Missing overlay image API")?(
+                view.background,
+                backdrop.as_mut_ptr().cast(),
+                256,
+                175,
+                4,
+            );
             ensure!(
                 error == 0,
-                "SteamVR rejected calibration view size: {error}"
+                "SteamVR rejected calibration background: {error}"
             );
-            let mut pose = vr::HmdMatrix34_t {
-                m: [
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, -1.6],
-                ],
-            };
-            let error = overlay
-                .SetOverlayTransformTrackedDeviceRelative
-                .context("Missing headset overlay transform API")?(
-                handle, 0, &mut pose
-            );
+            let error = overlay.ShowOverlay.context("Missing overlay show API")?(view.background);
             ensure!(
                 error == 0,
-                "SteamVR rejected calibration view position: {error}"
+                "SteamVR did not show calibration background: {error}"
             );
             Ok(view)
         }

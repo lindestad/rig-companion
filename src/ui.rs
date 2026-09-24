@@ -95,6 +95,7 @@ pub enum Message {
     Undo,
     Dashboard,
     GazeClick,
+    GazePointerToggle,
     Delay(bool),
     Shortcuts(bool),
     Cancel,
@@ -451,6 +452,7 @@ impl App {
                         HotkeyEvent::Shortcut(4) => self.schedule(Command::Recenter98),
                         HotkeyEvent::Shortcut(6) => self.dispatch(Command::Dashboard),
                         HotkeyEvent::Shortcut(7) => self.dispatch(Command::Passthrough),
+                        HotkeyEvent::Shortcut(10) => self.dispatch(Command::GazePointerToggle),
                         _ => {}
                     }
                 }
@@ -500,6 +502,7 @@ impl App {
                 self.dispatch(Command::Passthrough);
             }
             Message::GazeClick => self.dispatch(Command::GazeClick),
+            Message::GazePointerToggle => self.dispatch(Command::GazePointerToggle),
             Message::Delay(value) => self.countdown_enabled = value,
             Message::Cancel => self.pending = None,
             Message::Shortcuts(enabled) => {
@@ -851,6 +854,12 @@ impl App {
                     .padding([12, 16])
                     .on_press_maybe((self.state.connected && free).then_some(Message::GazeClick))
                     .style(secondary),
+                button(text("Eye pointer · F19 toggle").size(14))
+                    .padding([12, 16])
+                    .on_press_maybe(
+                        (self.state.connected && free).then_some(Message::GazePointerToggle)
+                    )
+                    .style(secondary),
                 button(text("Camera · F16").size(14))
                     .padding([12, 16])
                     .on_press_maybe((self.state.connected && free).then_some(Message::Passthrough))
@@ -865,7 +874,7 @@ impl App {
                 .label("Global shortcuts")
                 .on_toggle(Message::Shortcuts)
                 .size(17),
-            text("F13 recenter / F14 click or drag / F15 desktop / F16 camera / F17-F18 joystick test | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
+            text("F13 recenter / F14 click or drag / F15 desktop / F16 camera / F17-F18 joystick / F19 eye pointer | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
                 .size(12)
                 .color(MUTED),
             Space::new().width(Fill),
@@ -1117,7 +1126,7 @@ impl App {
                 button(if self.calibration_check_pending { "Checking tracker…" } else { "Check calibration availability" })
                     .on_press_maybe((!self.calibration_check_pending && !self.state.demo).then_some(Message::CheckEyeCalibration)).style(secondary).padding(12),
             ].spacing(12)),
-            text("F13 recenter · F14 gaze click or drag · F15 dashboard · F16 camera stay active on this page.").size(14).color(MUTED),
+            text("F13 recenter · F14 click or drag · F15 dashboard · F16 camera · F19 eye pointer toggle.").size(14).color(MUTED),
         ].spacing(20).max_width(1120);
         container(scrollable(container(content).padding(24).center_x(Fill)))
             .height(Fill)

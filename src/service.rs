@@ -29,6 +29,7 @@ pub enum Command {
     GazeRefresh,
     GazeUp,
     Joystick(i8),
+    GazePointerToggle,
     Nudge(f64),
     Undo,
     Dashboard,
@@ -430,6 +431,23 @@ impl Engine {
                 };
                 vr.headset_joystick(direction)?;
                 Ok(format!("Headset joystick direction {direction}."))
+            }
+            Command::GazePointerToggle => {
+                if self.state.demo {
+                    return Ok("Demo: eye pointer toggle simulated.".into());
+                }
+                let Backend::Live(vr) =
+                    self.backend.as_ref().context("Connect to SteamVR first")?
+                else {
+                    unreachable!()
+                };
+                let enabled = vr.headset_gaze_pointer_toggle()?;
+                Ok(if enabled {
+                    "Eye pointer on. Invalid gaze falls back to head aim."
+                } else {
+                    "Eye pointer off; head aim restored."
+                }
+                .into())
             }
         }
     }

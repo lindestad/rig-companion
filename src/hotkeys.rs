@@ -4,7 +4,7 @@ use windows_sys::Win32::{
     UI::{
         Input::KeyboardAndMouse::{
             GetAsyncKeyState, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, RegisterHotKey, UnregisterHotKey,
-            VK_F7, VK_F8, VK_F9, VK_F13, VK_F14, VK_F15, VK_F16, VK_F17, VK_F18,
+            VK_F7, VK_F8, VK_F9, VK_F13, VK_F14, VK_F15, VK_F16, VK_F17, VK_F18, VK_F19,
         },
         WindowsAndMessaging::{
             GetMessageW, KillTimer, MSG, PostThreadMessageW, SetTimer, WM_HOTKEY, WM_QUIT, WM_TIMER,
@@ -45,6 +45,7 @@ impl Hotkeys {
                         (VK_F16, 0),
                         (VK_F17, 0),
                         (VK_F18, 0),
+                        (VK_F19, 0),
                     ];
                     for (index, (key, modifiers)) in keys.iter().enumerate() {
                         if RegisterHotKey(
@@ -67,7 +68,7 @@ impl Hotkeys {
                     // A windowless timer gets a system-assigned ID; use the returned value.
                     let timer = SetTimer(std::ptr::null_mut(), 0, 10, None);
                     if timer == 0 {
-                        for id in 1..=9 {
+                        for id in 1..=10 {
                             UnregisterHotKey(std::ptr::null_mut(), id);
                         }
                         let _ = ready_tx.send(Err("Could not watch held-key releases.".into()));
@@ -108,7 +109,7 @@ impl Hotkeys {
                         let _ = events_tx.send(HotkeyEvent::Joystick(0));
                     }
                     KillTimer(std::ptr::null_mut(), timer);
-                    for id in 1..=9 {
+                    for id in 1..=10 {
                         UnregisterHotKey(std::ptr::null_mut(), id);
                     }
                 }

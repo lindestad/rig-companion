@@ -116,9 +116,11 @@ fn run() -> anyhow::Result<()> {
         let vr = rig_companion::steamvr::SteamVr::connect()?;
         let reply = vr.headset_bridge_request(c"rigcompanion:capabilities:v1")?;
         let hold_reply = vr.headset_bridge_request(c"rigcompanion:capabilities:v2")?;
+        let gaze_pointer_reply =
+            vr.headset_bridge_request(c"rigcompanion:capabilities:gaze-pointer:v1")?;
         println!(
             "{}",
-            serde_json::json!({"supported":reply == "ok:rigcompanion:gaze-click:v1", "hold_supported":hold_reply == "ok:rigcompanion:gaze-hold:v2", "reply":reply, "hold_reply":hold_reply})
+            serde_json::json!({"supported":reply == "ok:rigcompanion:gaze-click:v1", "hold_supported":hold_reply == "ok:rigcompanion:gaze-hold:v2", "gaze_pointer_supported":gaze_pointer_reply == "ok:rigcompanion:gaze-pointer:v1", "reply":reply, "hold_reply":hold_reply, "gaze_pointer_reply":gaze_pointer_reply})
         );
         return Ok(());
     }

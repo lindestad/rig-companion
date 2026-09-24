@@ -440,6 +440,21 @@ impl SteamVr {
         Ok(())
     }
 
+    pub fn headset_gaze_pointer_toggle(&self) -> Result<bool> {
+        let capability =
+            self.headset_bridge_request(c"rigcompanion:capabilities:gaze-pointer:v1")?;
+        ensure!(
+            capability == "ok:rigcompanion:gaze-pointer:v1",
+            "Headset driver does not support the eye pointer (reply: {capability:?})"
+        );
+        let response = self.headset_bridge_request(c"rigcompanion:gaze-pointer-toggle:v1")?;
+        match response.as_str() {
+            "ok:on" => Ok(true),
+            "ok:off" => Ok(false),
+            _ => anyhow::bail!("Headset eye pointer toggle rejected: {response}"),
+        }
+    }
+
     pub fn gamepad_enabled(&self) -> Result<bool> {
         // SAFETY: exact SDK settings table and writable error output.
         unsafe {

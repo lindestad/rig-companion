@@ -1,5 +1,13 @@
 # Dream Air gaze display and calibration
 
+## September 24 startup failure observation
+
+During a live SteamVR session, Rig Companion reported invalid gaze while the Tobii VR4PIMAXP3B Windows service was running and Windows showed the EyeChip device as OK. A new driver diagnostic recorded `pvr_getEyeTrackingInfo` returning success with a zero sample timestamp. That establishes that the driver had no gaze sample to forward; it does not distinguish a sleeping headset, vendor startup race, or a stalled eye camera. Restarting SteamVR alone did not restore a nonzero sample in this observation. The user reports that restarting the headset in Pimax EVO usually does.
+
+The driver now checks the PVR result and only forwards an advancing sample timestamp. A backward clock reset after headset restart is accepted after three advancing timestamps in the new epoch. It logs one stall and one resumption transition. This prevents repeated identical PVR timestamps from being presented as fresh gaze and lets the optional dashboard eye pointer fall back to head aim. A vendor call could still return a changing timestamp for stale image data, so this is not proof of camera freshness.
+
+The bundled PVR API exposes a gaze read but no eye-tracker-only reset operation. Pimax service logs show an `active_tobii_runtime` launcher command, but its behavior and safety as a recovery action are not documented here; it has not been invoked by Rig Companion. A targeted recovery control needs a before/after test with the headset worn, a verified fresh gaze sample, and confirmation that a running game's gaze/DFR survives it. Until then, Pimax EVO's own restart remains the known user-confirmed recovery path.
+
 ## Implementation follow-up, September 16
 
 ### Licensed connection test

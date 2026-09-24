@@ -19,12 +19,12 @@ Use `cargo run --bin rig-companion -- --demo` to exercise the interface without 
 Keep the window open or minimized. The Quit button, window close button and Alt+F4 cleanly shut down SteamVR and the companion, while leaving Pimax EVO running. **Global shortcuts** are enabled at launch, unless registration fails:
 
 - **F13:** restore 98 cm plus saved horizontal position and heading. Without a captured reference, use the SteamVR origin and forward direction. Waits **0.5 seconds**, then checks tracking stability and applies the correction; sit normally and look forward. The GUI height/capture countdown remains three seconds. Disabling countdown removes the delay for both.
-- **F14:** click the SteamVR dashboard gaze pointer through the modified sboys3 HMD driver. The dashboard must be visible. The driver supplies and releases a 120 ms native headset system-button pulse. No virtual Xbox controller is created.
+- **F14:** press and hold the SteamVR dashboard gaze pointer through the modified sboys3 HMD driver. Release F14 to release the pointer, so holding while moving your head can drag dashboard controls. Quick taps last at least 120 ms. The dashboard must be visible. No virtual Xbox controller is created.
 - **F15:** toggle the dashboard. When closed, open the first available desktop panel (or the dashboard if desktop is still loading). When visible, close it. The GUI **Dashboard · F15** button uses the same action.
 - **F16:** toggle SteamVR camera Room View. The GUI **Camera · F16** button uses the same command. SteamVR Camera and Room View must be enabled, and the headset driver must expose a camera.
 - **Ctrl+Alt+F8:** saved height only; **Ctrl+Alt+F9:** undo/cancel countdown; **Ctrl+Alt+F7:** toggle dashboard.
 
-F13 always uses 98 cm, without overwriting the saved profile. Disable Global shortcuts to release the bindings. The F14 bridge is intended for the dashboard, not for clicking scene objects in SteamVR Home or games. Holding F14 does not repeat or drag. `rigctl headset-bridge-status` checks the active driver's capability without clicking. See [driver installation and rollback](docs/driver-installation.md).
+F13 always uses 98 cm, without overwriting the saved profile. Disable Global shortcuts to release the bindings. The F14 bridge is intended for the dashboard, not for clicking scene objects in SteamVR Home or games. `rigctl headset-bridge-status` checks the active driver's capability without clicking. See [driver installation and rollback](docs/driver-installation.md).
 
 **Capture current position** records a full reference only when the floor is already correct. Height nudges do not overwrite the saved reference. Undo covers the last correction in the current connection; a detected external origin change invalidates it.
 

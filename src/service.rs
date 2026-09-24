@@ -25,6 +25,9 @@ pub enum Command {
     RestoreReference,
     Recenter98,
     GazeClick,
+    GazeDown,
+    GazeRefresh,
+    GazeUp,
     Nudge(f64),
     Undo,
     Dashboard,
@@ -387,6 +390,31 @@ impl Engine {
                 vr.headset_gaze_click()?;
                 Ok("Headset driver accepted a 120 ms system-button pulse.".into())
             }
+            Command::GazeDown | Command::GazeRefresh | Command::GazeUp => {
+                if self.state.demo {
+                    return Ok("Demo: VR gaze button state simulated.".into());
+                }
+                let Backend::Live(vr) =
+                    self.backend.as_ref().context("Connect to SteamVR first")?
+                else {
+                    unreachable!()
+                };
+                match command {
+                    Command::GazeDown => {
+                        vr.headset_gaze_down()?;
+                        Ok("VR gaze button held while F14 is down.".into())
+                    }
+                    Command::GazeRefresh => {
+                        vr.headset_gaze_refresh()?;
+                        Ok("VR gaze hold refreshed.".into())
+                    }
+                    Command::GazeUp => {
+                        vr.headset_gaze_up()?;
+                        Ok("VR gaze button released.".into())
+                    }
+                    _ => unreachable!(),
+                }
+            }
         }
     }
 }
@@ -445,8 +473,14 @@ impl Worker {
                             if matches!(command, Command::Connect) {
                                 auto_connect = true;
                             }
-                            shared.lock().unwrap().busy = true;
-                            let _ = engine.run(command);
+                            if matches!(command, Command::GazeRefresh) {
+                                if let Err(error) = engine.execute(command) {
+                                    engine.result(Err(error));
+                                }
+                            } else {
+                                shared.lock().unwrap().busy = true;
+                                let _ = engine.run(command);
+                            }
                         }
                         Err(mpsc::RecvTimeoutError::Timeout) => {
                             engine.refresh();

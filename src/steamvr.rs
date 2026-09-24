@@ -389,6 +389,31 @@ impl SteamVr {
         Ok(())
     }
 
+    fn headset_gaze_hold_request(&self, request: &CStr, expected: &str) -> Result<()> {
+        let response = self.headset_bridge_request(request)?;
+        ensure!(
+            response == expected,
+            "Headset gaze hold rejected: {response}"
+        );
+        Ok(())
+    }
+
+    pub fn headset_gaze_down(&self) -> Result<()> {
+        ensure!(
+            self.dashboard_visible()?,
+            "Open the SteamVR dashboard before using F14"
+        );
+        self.headset_gaze_hold_request(c"rigcompanion:gaze-down:v2", "ok:down")
+    }
+
+    pub fn headset_gaze_refresh(&self) -> Result<()> {
+        self.headset_gaze_hold_request(c"rigcompanion:gaze-refresh:v2", "ok:refreshed")
+    }
+
+    pub fn headset_gaze_up(&self) -> Result<()> {
+        self.headset_gaze_hold_request(c"rigcompanion:gaze-up:v2", "ok:up")
+    }
+
     pub fn gamepad_enabled(&self) -> Result<bool> {
         // SAFETY: exact SDK settings table and writable error output.
         unsafe {

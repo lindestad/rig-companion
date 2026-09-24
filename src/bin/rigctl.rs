@@ -115,9 +115,10 @@ fn run() -> anyhow::Result<()> {
         anyhow::ensure!(!args.demo, "Headset bridge status requires live SteamVR");
         let vr = rig_companion::steamvr::SteamVr::connect()?;
         let reply = vr.headset_bridge_request(c"rigcompanion:capabilities:v1")?;
+        let hold_reply = vr.headset_bridge_request(c"rigcompanion:capabilities:v2")?;
         println!(
             "{}",
-            serde_json::json!({"supported":reply == "ok:rigcompanion:gaze-click:v1", "reply":reply})
+            serde_json::json!({"supported":reply == "ok:rigcompanion:gaze-click:v1", "hold_supported":hold_reply == "ok:rigcompanion:gaze-hold:v2", "reply":reply, "hold_reply":hold_reply})
         );
         return Ok(());
     }

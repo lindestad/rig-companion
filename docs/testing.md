@@ -11,7 +11,7 @@
 5. Use **Undo last change** to return to the pre-correction origin. Repeat restore and check that repeated presses do not accumulate an offset.
 6. Try 5 mm / 1 cm / 5 cm steps. The plus button raises the viewpoint; minus lowers it. Your saved reference should stay at 98 cm unless you save or capture another value.
 7. Once the floor looks correct, sit normally and look forward, then **Capture current position**. This stores height, horizontal position and yaw. Test **Restore position + heading** separately.
-8. Global shortcuts start enabled. F13 restores 98 cm and recenters position/heading; without a captured reference it uses origin/forward. Undo cancels a pending countdown. F14 pulses virtual gamepad right trigger while the dashboard is visible. Test by looking at a harmless dashboard tab and pressing F14. The first press attaches the gamepad; retry once if SteamVR is still discovering it.
+8. Global shortcuts start enabled. F13 restores 98 cm and recenters position/heading; without a captured reference it uses origin/forward. Undo cancels a pending countdown. With the dashboard visible, tap F14 to click a harmless tab. Then aim at a dashboard window resize handle, hold F14 while moving your head, and release it to finish the drag. Confirm that the window resizes and the pointer stops dragging on release. `rigctl headset-bridge-status` should report both click and hold support before this test.
 
 Do not use current-position capture while below the floor: that would teach the wrong reference. The app rejects a captured height outside the configured 20–250 cm range. Restoring the 98 cm target works from a negative measured height.
 

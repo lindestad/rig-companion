@@ -3,16 +3,25 @@ use windows_sys::Win32::{
     System::Threading::GetCurrentThreadId,
     UI::{
         Input::KeyboardAndMouse::{
-            MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, RegisterHotKey, UnregisterHotKey, VK_F7, VK_F8,
-            VK_F9, VK_F13, VK_F14, VK_F15, VK_F16,
+            GetAsyncKeyState, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, RegisterHotKey, UnregisterHotKey,
+            VK_F7, VK_F8, VK_F9, VK_F13, VK_F14, VK_F15, VK_F16,
         },
-        WindowsAndMessaging::{GetMessageW, MSG, PostThreadMessageW, WM_HOTKEY, WM_QUIT},
+        WindowsAndMessaging::{
+            GetMessageW, KillTimer, MSG, PostThreadMessageW, SetTimer, WM_HOTKEY, WM_QUIT, WM_TIMER,
+        },
     },
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HotkeyEvent {
+    Shortcut(u32),
+    GazeDown,
+    GazeUp,
+}
+
 pub struct Hotkeys {
     thread_id: u32,
-    pub events: mpsc::Receiver<u32>,
+    pub events: mpsc::Receiver<HotkeyEvent>,
     join: Option<std::thread::JoinHandle<()>>,
 }
 
@@ -52,12 +61,41 @@ impl Hotkeys {
                             return;
                         }
                     }
+                    let timer = SetTimer(std::ptr::null_mut(), 8, 10, None);
+                    if timer == 0 {
+                        for id in 1..=7 {
+                            UnregisterHotKey(std::ptr::null_mut(), id);
+                        }
+                        let _ = ready_tx.send(Err("Could not watch F14 release.".into()));
+                        return;
+                    }
                     let _ = ready_tx.send(Ok(GetCurrentThreadId()));
+                    let mut gaze_down = false;
                     let mut msg = MSG::default();
                     while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
                         if msg.message == WM_HOTKEY {
-                            let _ = events_tx.send(msg.wParam as u32);
+                            if msg.wParam == 5 {
+                                if !gaze_down {
+                                    gaze_down = true;
+                                    let _ = events_tx.send(HotkeyEvent::GazeDown);
+                                }
+                            } else {
+                                let _ = events_tx.send(HotkeyEvent::Shortcut(msg.wParam as u32));
+                            }
+                        } else if msg.message == WM_TIMER
+                            && msg.wParam == 8
+                            && gaze_down
+                            && GetAsyncKeyState(VK_F14.into()) >= 0
+                        {
+                            gaze_down = false;
+                            let _ = events_tx.send(HotkeyEvent::GazeUp);
                         }
+                    }
+                    if gaze_down {
+                        let _ = events_tx.send(HotkeyEvent::GazeUp);
+                    }
+                    if timer != 0 {
+                        KillTimer(std::ptr::null_mut(), 8);
                     }
                     for id in 1..=7 {
                         UnregisterHotKey(std::ptr::null_mut(), id);

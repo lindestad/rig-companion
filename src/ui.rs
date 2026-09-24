@@ -1,4 +1,4 @@
-use crate::hotkeys::Hotkeys;
+use crate::hotkeys::{HotkeyEvent, Hotkeys};
 use iced::{
     Color, Element, Fill, Font, Length, Point, Rectangle, Renderer, Size, Subscription, Task,
     Theme, alignment, border, mouse,
@@ -30,6 +30,8 @@ pub struct App {
     countdown_enabled: bool,
     pending: Option<(Instant, Command)>,
     hotkeys: Option<Hotkeys>,
+    gaze_held: bool,
+    gaze_refreshed: Instant,
     local_message: Option<String>,
     eye_page: bool,
     settings_page: bool,
@@ -119,6 +121,8 @@ impl App {
             countdown_enabled: true,
             pending: None,
             hotkeys,
+            gaze_held: false,
+            gaze_refreshed: Instant::now(),
             local_message,
             eye_page: false,
             settings_page: false,
@@ -268,6 +272,7 @@ impl App {
                     self.quitting = true;
                     self.quit_error = None;
                     self.pending = None;
+                    self.release_gaze();
                     self.hotkeys = None;
                     self.worker.begin_shutdown();
                     self.wind.suspend();
@@ -413,20 +418,31 @@ impl App {
                     .as_ref()
                     .map(|h| h.events.try_iter().collect())
                     .unwrap_or_default();
-                for id in shortcuts {
-                    match id {
-                        1 => self.schedule(Command::RestoreHeight),
-                        2 => {
+                for event in shortcuts {
+                    match event {
+                        HotkeyEvent::GazeDown => {
+                            if self.state.connected && !self.quitting && !self.gaze_held {
+                                self.gaze_held = true;
+                                self.gaze_refreshed = Instant::now();
+                                self.worker.send(Command::GazeDown);
+                            }
+                        }
+                        HotkeyEvent::GazeUp => self.release_gaze(),
+                        HotkeyEvent::Shortcut(1) => self.schedule(Command::RestoreHeight),
+                        HotkeyEvent::Shortcut(2) => {
                             self.pending = None;
                             self.dispatch(Command::Undo);
                         }
-                        3 => self.dispatch(Command::Dashboard),
-                        4 => self.schedule(Command::Recenter98),
-                        5 => self.dispatch(Command::GazeClick),
-                        6 => self.dispatch(Command::Dashboard),
-                        7 => self.dispatch(Command::Passthrough),
+                        HotkeyEvent::Shortcut(3) => self.dispatch(Command::Dashboard),
+                        HotkeyEvent::Shortcut(4) => self.schedule(Command::Recenter98),
+                        HotkeyEvent::Shortcut(6) => self.dispatch(Command::Dashboard),
+                        HotkeyEvent::Shortcut(7) => self.dispatch(Command::Passthrough),
                         _ => {}
                     }
+                }
+                if self.gaze_held && self.gaze_refreshed.elapsed() >= Duration::from_millis(250) {
+                    self.gaze_refreshed = Instant::now();
+                    self.worker.send(Command::GazeRefresh);
                 }
             }
             Message::Height(value) => self.height = value,
@@ -473,6 +489,7 @@ impl App {
                         Err(e) => self.local_message = Some(e.to_string()),
                     }
                 } else {
+                    self.release_gaze();
                     self.hotkeys = None;
                 }
             }
@@ -487,6 +504,13 @@ impl App {
         self.local_message = None;
         self.state.busy = true;
         self.worker.send(command);
+    }
+
+    fn release_gaze(&mut self) {
+        if self.gaze_held {
+            self.gaze_held = false;
+            self.worker.send(Command::GazeUp);
+        }
     }
 
     fn schedule(&mut self, command: Command) {
@@ -795,7 +819,7 @@ impl App {
                     .padding([12, 16])
                     .on_press_maybe((self.state.connected && free).then_some(Message::Dashboard))
                     .style(secondary),
-                button(text("VR gaze click · F14").size(14))
+                button(text("VR gaze click · hold F14 to drag").size(14))
                     .padding([12, 16])
                     .on_press_maybe((self.state.connected && free).then_some(Message::GazeClick))
                     .style(secondary),
@@ -813,7 +837,7 @@ impl App {
                 .label("Global shortcuts")
                 .on_toggle(Message::Shortcuts)
                 .size(17),
-            text("F13 recenter / F14 click / F15 desktop / F16 camera | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
+            text("F13 recenter / F14 click or drag / F15 desktop / F16 camera | Ctrl+Alt: F8 height / F9 undo / F7 dashboard")
                 .size(12)
                 .color(MUTED),
             Space::new().width(Fill),
@@ -1065,7 +1089,7 @@ impl App {
                 button(if self.calibration_check_pending { "Checking tracker…" } else { "Check calibration availability" })
                     .on_press_maybe((!self.calibration_check_pending && !self.state.demo).then_some(Message::CheckEyeCalibration)).style(secondary).padding(12),
             ].spacing(12)),
-            text("F13 recenter · F14 gaze click · F15 dashboard · F16 camera stay active on this page.").size(14).color(MUTED),
+            text("F13 recenter · F14 gaze click or drag · F15 dashboard · F16 camera stay active on this page.").size(14).color(MUTED),
         ].spacing(20).max_width(1120);
         container(scrollable(container(content).padding(24).center_x(Fill)))
             .height(Fill)
